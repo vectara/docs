@@ -23,7 +23,7 @@ more accurate results.
 ## Available rerankers
 
 Vectara offers multiple reranking models that enable you to choose the best one
-that for your data and use case. You can evaluate different models
+for your data and use case. You can evaluate different models
 against your own dataset to determine which provides optimal results for your
 domain and accuracy and latency requirements.
 
