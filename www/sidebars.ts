@@ -648,6 +648,12 @@ const sidebars: SidebarsConfig = {
                 },
                 {
                   type: "doc",
+                  id: "rest-api/bulk-delete-corpus-documents",
+                  label: "Bulk delete documents",
+                  className: "api-method delete",
+                },
+                {
+                  type: "doc",
                   id: "rest-api/get-corpus-document",
                   label: "Retrieve a document",
                   className: "api-method get",

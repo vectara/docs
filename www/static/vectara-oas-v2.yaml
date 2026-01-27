@@ -29,6 +29,9 @@ tags:
 - name: Agent Sessions
   description: Manage agent sessions and interact with agents through conversational
     events.
+- name: Guardrails
+  description: List predefined guardrails for validating tool calls, agent outputs,
+    and agent actions.
 - name: Instructions
   description: Create and manage instructions that guide agent behavior.
 - name: Tools
@@ -1699,6 +1702,87 @@ paths:
         cursor: $request.page_key
         next_cursor: $response.metadata.page_key
         results: $response.documents
+    delete:
+      tags:
+      - Documents
+      summary: Bulk delete documents from a corpus
+      x-supported-api-key-type:
+      - IndexService
+      - Personal
+      description: 'Initiates an asynchronous bulk delete operation for documents
+        in a corpus.
+
+        This operation accepts a metadata filter, a list of specific document IDs,
+        or both.
+
+
+        **Important**: This is a best-effort operation.
+
+        See the response schema documentation for details on the behavior differences
+        between `metadata_filter` and `document_ids` parameters.
+
+
+        The operation runs as a background workflow.
+
+        Use the returned `job_id` to track progress via the Jobs API.
+
+        '
+      operationId: bulkDeleteCorpusDocuments
+      parameters:
+      - $ref: '#/components/parameters/RequestTimeout'
+      - $ref: '#/components/parameters/RequestTimeoutMillis'
+      - in: path
+        name: corpus_key
+        description: The unique key identifying the corpus containing documents to
+          delete.
+        required: true
+        schema:
+          $ref: '#/components/schemas/CorpusKey'
+      - name: metadata_filter
+        in: query
+        description: 'Filter documents by metadata. Uses the same expression as a
+          query metadata filter.
+
+          Example: `doc.status = ''archived'' AND doc.year < 2020`
+
+          '
+        required: false
+        schema:
+          type: string
+      - name: document_ids
+        in: query
+        description: Comma-separated list of document IDs to delete. Maximum 10,000
+          IDs per request.
+        required: false
+        schema:
+          type: string
+      responses:
+        '202':
+          description: Bulk delete operation accepted and queued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BulkDeleteDocumentsResponse'
+        '400':
+          description: Invalid request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '403':
+          description: Permissions do not allow bulk deleting documents.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Corpus not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      x-fern-sdk-group-name: documents
+      x-fern-sdk-method-name: bulk_delete
   /v2/corpora/{corpus_key}/documents/{document_id}:
     delete:
       tags:
@@ -3485,7 +3569,7 @@ paths:
         - Connect external LLMs using OpenAI-compatible API format\n- Configure multiple\
         \ LLM providers for different use cases\n- Override Vectara's built-in LLMs\
         \ with your own models\n- Use custom models for RAG, chat, and document summarization\n\
-        \n**Example providers:**\n\n### OpenAI\n\n**Type:** `openai-compatible`\n\n\
+        \n**Example providers:**\n\n### OpenAI\n\n**Type:** `openai-compatible`\n\
         **Models:** GPT-4o, GPT-5\n**Auth:** Bearer token\n\n```json\n{\n  \"type\"\
         : \"openai-compatible\",\n  \"name\": \"my-gpt5\",\n  \"model\": \"gpt-5\"\
         ,\n  \"uri\": \"https://api.openai.com/v1/chat/completions\",\n  \"auth\"\
@@ -3496,26 +3580,27 @@ paths:
         : \"openai-responses\",\n  \"name\": \"my-o1\",\n  \"model\": \"o1-preview\"\
         ,\n  \"uri\": \"https://api.openai.com/v1/chat/completions\",\n  \"auth\"\
         : {\n    \"type\": \"bearer\",\n    \"token\": \"sk-...\"\n  }\n}\n```\n\n\
-        ### Anthropic Claude\n**Type:** `openai-compatible`\n**Models:** claude-4-opus,\
+        ### Anthropic Claude\n\n**Type:** `openai-compatible`\n**Models:** claude-4-opus,\
         \ claude-4-5-haiku, claude-4-5-sonnet\n**Auth:** Bearer token with header\n\
-        ```json\n{\n  \"type\": \"openai-compatible\",\n  \"name\": \"my-claude\"\
+        \n```json\n{\n  \"type\": \"openai-compatible\",\n  \"name\": \"my-claude\"\
         ,\n  \"model\": \"claude-sonnet-4-5-20250929\",\n  \"uri\": \"https://api.anthropic.com/v1/messages\"\
         ,\n  \"auth\": {\n    \"type\": \"bearer\",\n    \"token\": \"sk-ant-...\"\
         \n  },\n  \"headers\": {\n    \"anthropic-version\": \"2023-06-01\"\n  }\n\
-        }\n\n\n### Azure OpenAI\n**Type:** `openai-compatible`\n**Models:** GPT-3.5,\
-        \ GPT-4 (Azure-deployed versions)\n**Auth:** Custom header (api-key)\n```json\n\
+        }\n```\n\n### Azure OpenAI\n\n**Type:** `openai-compatible`\n**Models:** GPT-3.5,\
+        \ GPT-4 (Azure-deployed versions)\n**Auth:** Custom header (api-key)\n\n```json\n\
         {\n  \"type\": \"openai-compatible\",\n  \"name\": \"my-azure-gpt4\",\n  \"\
         model\": \"gpt-4\",\n  \"uri\": \"https://YOUR-RESOURCE.openai.azure.com/openai/deployments/YOUR-DEPLOYMENT/chat/completions?api-version=2024-02-15-preview\"\
         ,\n  \"auth\": {\n    \"type\": \"header\",\n    \"header\": \"api-key\",\n\
-        \    \"value\": \"your-azure-key\"\n  }\n}\n\n### Google Vertex AI (Gemini)\n\
-        **Type:** `vertex-ai`\n**Models:** gemini-2.5-pro, gemini-2.5-flash\n**Auth:**\
-        \ Service account or API key\n```json\n{\n  \"type\": \"vertex-ai\",\n  \"\
-        name\": \"my-gemini\",\n  \"model\": \"gemini-1.5-pro\",\n  \"uri\": \"https://us-central1-aiplatform.googleapis.com/v1/projects/YOUR-PROJECT/locations/us-central1/publishers/google/models/gemini-1.5-pro:generateContent\"\
+        \    \"value\": \"your-azure-key\"\n  }\n}\n```\n\n### Google Vertex AI (Gemini)\n\
+        \n**Type:** `vertex-ai`\n**Models:** gemini-2.5-pro, gemini-2.5-flash\n**Auth:**\
+        \ Service account or API key\n\n```json\n{\n  \"type\": \"vertex-ai\",\n \
+        \ \"name\": \"my-gemini\",\n  \"model\": \"gemini-1.5-pro\",\n  \"uri\": \"\
+        https://us-central1-aiplatform.googleapis.com/v1/projects/YOUR-PROJECT/locations/us-central1/publishers/google/models/gemini-1.5-pro:generateContent\"\
         ,\n  \"auth\": {\n    \"type\": \"service_account\",\n    \"key_json\": \"\
         {...service account JSON...}\"\n  }\n}\n```\n\n### Custom OpenAI-Compatible\n\
-        **Type:** `openai-compatible`\n**Models:** Any self-hosted or custom LLM,\
-        \ such as OpenRouter.\n**Auth:** Bearer or custom header\n```json\n{\n  \"\
-        type\": \"openai-compatible\",\n  \"name\": \"my-custom-llm\",\n  \"model\"\
+        \n**Type:** `openai-compatible`\n**Models:** Any self-hosted or custom LLM,\
+        \ such as OpenRouter.\n**Auth:** Bearer or custom header\n\n```json\n{\n \
+        \ \"type\": \"openai-compatible\",\n  \"name\": \"my-custom-llm\",\n  \"model\"\
         : \"llama-3-70b\",\n  \"uri\": \"https://my-llm-endpoint.com/v1/chat/completions\"\
         ,\n  \"auth\": {\n    \"type\": \"bearer\",\n    \"token\": \"custom-token\"\
         \n  }\n}\n```\n"
@@ -3710,6 +3795,94 @@ paths:
                 $ref: '#/components/schemas/NotFoundError'
       x-fern-sdk-group-name: llms
       x-fern-sdk-method-name: delete
+    patch:
+      tags:
+      - Large Language Models
+      summary: Update an LLM
+      x-supported-api-key-type:
+      - IndexService
+      - Personal
+      description: 'Update an existing LLM''s configuration. This endpoint allows
+        partial updates - only provide fields you want to change. Only the name field
+        is immutable.
+
+
+        The updated LLM will be tested before saving to ensure credentials are valid.
+
+
+        **Updatable fields:**
+
+        - `description` - LLM description
+
+        - `type` - LLM type (openai-compatible, vertex-ai, etc.)
+
+        - `model` - Model identifier
+
+        - `uri` - API endpoint
+
+        - `auth` - Authentication credentials (including service account key_json)
+
+        - `headers` - Additional HTTP headers (for openai-compatible and anthropic
+        types)
+
+        - `enabled` - Whether the LLM is enabled
+
+        - `capabilities` - Model capabilities (image support, context limit, tool
+        calling)
+
+
+        **Immutable fields:**
+
+        - `id` - System-generated identifier
+
+        - `name` - LLM name
+
+
+        Built-in LLMs (system-provided models) cannot be updated.
+
+        '
+      operationId: updateLLM
+      parameters:
+      - $ref: '#/components/parameters/RequestTimeout'
+      - $ref: '#/components/parameters/RequestTimeoutMillis'
+      - name: llm_id
+        in: path
+        description: The ID of the LLM to update.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLLMRequest'
+      responses:
+        '200':
+          description: The LLM has been updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LLM'
+        '400':
+          description: Invalid request body or connection test failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '403':
+          description: Permissions do not allow updating this LLM or LLM is built-in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: LLM not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      x-fern-sdk-group-name: llms
+      x-fern-sdk-method-name: update
   /v2/llms/chat/completions:
     post:
       tags:
@@ -4164,7 +4337,7 @@ paths:
       x-fern-pagination:
         cursor: $request.page_key
         next_cursor: $response.metadata.page_key
-        results: $response.hallucinationCorrectionModels
+        results: $response.hallucination_correctors
       parameters:
       - $ref: '#/components/parameters/RequestTimeout'
       - $ref: '#/components/parameters/RequestTimeoutMillis'
@@ -6654,7 +6827,7 @@ paths:
         \ or apply access controls. Instructions and tools can also reference metadata\
         \ using `${\\session.metadata.field}` or `$\\ref` syntax.\n\nA session also\
         \ serves as the workspace for artifacts, enabling file uploads and multi-step\
-        \ workflows. For more information, see [Working with artifacts in sessions](https://docs.vectara.com/docs/agents/sessions#working-with-artifacts-in-sessions).\n\
+        \ workflows. For more information, see [Working with artifacts in sessions](https://docs.vectara.com/docs/agent-os/sessions#working-with-artifacts-in-sessions).\n\
         \n## Example request\n\n```json\n\\$ curl -X POST https://api.vectara.io/v2/agents/support-agent/sessions\
         \ \\\n-H \"Authorization: Bearer YOUR_API_KEY\" \\\n-H \"Content-Type: application/json\"\
         \ \\\n-d '{\n  \"key\": \"user_12345_session\",\n  \"name\": \"Customer Support\
@@ -7026,8 +7199,10 @@ paths:
               tool_output: '#/components/schemas/ToolOutputEvent'
               thinking: '#/components/schemas/ThinkingEvent'
               agent_output: '#/components/schemas/AgentOutputEvent'
+              structured_output: '#/components/schemas/StructuredOutputEvent'
               context_limit_exceeded: '#/components/schemas/ContextLimitExceededEvent'
               image_read: '#/components/schemas/ImageReadEvent'
+              guardrail_check: '#/components/schemas/GuardrailCheckEvent'
           oneOf:
           - $ref: '#/components/schemas/InputMessageEvent'
           - $ref: '#/components/schemas/ArtifactUploadEvent'
@@ -7035,6 +7210,7 @@ paths:
           - $ref: '#/components/schemas/ToolOutputEvent'
           - $ref: '#/components/schemas/ThinkingEvent'
           - $ref: '#/components/schemas/AgentOutputEvent'
+          - $ref: '#/components/schemas/StructuredOutputEvent'
           - $ref: '#/components/schemas/ContextLimitExceededEvent'
           - $ref: '#/components/schemas/ImageReadEvent'
           properties:
@@ -7056,8 +7232,10 @@ paths:
               - tool_output
               - thinking
               - agent_output
+              - structured_output
               - context_limit_exceeded
               - image_read
+              - guardrail_check
               example: input_message
             created_at:
               description: Timestamp when the event was created.
@@ -7082,6 +7260,7 @@ paths:
               streaming_thinking_end: '#/components/schemas/StreamingThinkingEnd'
               tool_input: '#/components/schemas/ToolInputEvent'
               tool_output: '#/components/schemas/ToolOutputEvent'
+              structured_output: '#/components/schemas/StructuredOutputEvent'
               context_limit_exceeded: '#/components/schemas/ContextLimitExceededEvent'
               image_read: '#/components/schemas/ImageReadEvent'
               error: '#/components/schemas/StreamError'
@@ -7093,6 +7272,7 @@ paths:
           - $ref: '#/components/schemas/StreamingThinkingEnd'
           - $ref: '#/components/schemas/ToolInputEvent'
           - $ref: '#/components/schemas/ToolOutputEvent'
+          - $ref: '#/components/schemas/StructuredOutputEvent'
           - $ref: '#/components/schemas/ContextLimitExceededEvent'
           - $ref: '#/components/schemas/ImageReadEvent'
           - $ref: '#/components/schemas/StreamError'
@@ -8641,6 +8821,64 @@ components:
           metadata: null
           section_type: social
           priority: medium
+    BulkDeleteDocumentsResponse:
+      description: 'Response containing the job ID for tracking the bulk delete operation.
+
+
+        **Important: Best-Effort Operation**
+
+
+        This is a best-effort deletion operation. The behavior differs based on which
+        parameter you use:
+
+
+        **Using `document_ids` (Recommended for precision)**
+
+        - Deletes only the exact documents specified by ID
+
+        - Most reliable option - documents are deleted from the primary storage directly
+
+        - Use this when you know exactly which documents to delete
+
+
+        **Using `metadata_filter` (Subject to indexing lag)**
+
+        - Filters are applied against the search index, not the primary document store
+
+        - Documents that have been recently indexed may not yet appear in search results
+        due to indexing pipeline lag
+
+        - This means recently added documents matching your filter may be missed
+
+        - A timestamp cutoff is captured at operation start; only documents created/updated
+        before this time are deleted
+
+        - Due to distributed system timing, documents added very close to the operation
+        start may still be deleted if timestamps are not perfectly synchronized
+
+
+        For mission-critical deletions where completeness is required, use `document_ids`
+        or run the filter-based deletion multiple times after indexing has caught
+        up.
+
+        '
+      type: object
+      properties:
+        job_id:
+          description: Job ID to track the bulk delete operation progress via the
+            Jobs API.
+          type: string
+          pattern: job_.+$
+          example: job_bulk_del_123456
+        cutoff_timestamp:
+          description: ISO 8601 timestamp captured at workflow launch. Only documents
+            created or updated before this timestamp will be deleted.
+          type: string
+          format: date-time
+          example: '2025-12-18T15:30:00Z'
+      required:
+      - job_id
+      - cutoff_timestamp
     UpdateDocumentRequest:
       description: Schema for updating the document. For PUT requests, the request
         body metadata replaces the existing metadata. For PATCH requests, the request
@@ -9960,6 +10198,12 @@ components:
           type: string
           format: date-time
           example: '2025-06-01T12:00:00Z'
+        agent_key:
+          description: The agent key if this query was made through an agent.
+          type: string
+        session_key:
+          description: The session key if this query was made through an agent session.
+          type: string
         spans:
           description: Parts of the query pipeline. Each span explains what happened
             during that stage of the query pipeline.
@@ -10007,6 +10251,12 @@ components:
           type: number
           format: float
           example: 0.98
+        agent_key:
+          description: The agent key if this query was made through an agent.
+          type: string
+        session_key:
+          description: The session key if this query was made through an agent session.
+          type: string
     ListQueryHistoriesResponse:
       description: An array of query histories.
       type: object
@@ -10023,6 +10273,27 @@ components:
               description: A query parameter required when requesting the next page
                 of results.
               type: string
+    LLMCapabilities:
+      description: Capabilities of a Large Language Model.
+      type: object
+      properties:
+        image_support:
+          description: Whether the model supports image inputs.
+          type: boolean
+        context_limit:
+          description: Maximum context window size in tokens.
+          type: integer
+          format: int32
+        tool_calling:
+          description: Whether the model supports tool/function calling.
+          type: boolean
+        structured_outputs:
+          description: Whether the model supports structured output generation.
+          type: boolean
+        requires_role_alternation:
+          description: Whether the model requires strict role alternation in conversations.
+            When true, consecutive messages of the same role will be grouped together.
+          type: boolean
     Prompt:
       description: A prompt that can be used with a LLM. A prompt is the template
         that is used to render the text sent to the LLM. It also contains various
@@ -10072,6 +10343,8 @@ components:
           description: If this is the default LLM, it is used in queries when the
             generator is not specified.
           type: boolean
+        capabilities:
+          $ref: '#/components/schemas/LLMCapabilities'
         prompts:
           description: List of prompts that the model can use. This is deprecated;
             see `/v2/generation_presets` instead.
@@ -10192,6 +10465,8 @@ components:
           additionalProperties: true
           example:
             max_tokens: 512
+        capabilities:
+          $ref: '#/components/schemas/LLMCapabilities'
       required:
       - name
       - uri
@@ -10321,6 +10596,8 @@ components:
             the test call.
           type: object
           additionalProperties: true
+        capabilities:
+          $ref: '#/components/schemas/LLMCapabilities'
       required:
       - type
       - name
@@ -10505,6 +10782,8 @@ components:
             the test call.
           type: object
           additionalProperties: true
+        capabilities:
+          $ref: '#/components/schemas/LLMCapabilities'
       required:
       - type
       - name
@@ -10530,6 +10809,165 @@ components:
       - $ref: '#/components/schemas/CreateAnthropicLLMRequest'
       required:
       - type
+    OpenAILLMUpdateBase:
+      description: Common updatable fields for OpenAI-compatible and Responses API
+        LLM requests.
+      type: object
+      properties:
+        model:
+          description: The model identifier to use for this LLM.
+          type: string
+          minLength: 1
+        uri:
+          description: The API endpoint for this LLM.
+          type: string
+          format: uri
+        description:
+          description: Description of the LLM.
+          type: string
+          maxLength: 1000
+          nullable: false
+        auth:
+          $ref: '#/components/schemas/RemoteAuth'
+        headers:
+          description: Additional HTTP headers to include with requests to the LLM
+            API.
+          type: object
+          additionalProperties:
+            type: string
+        enabled:
+          description: Whether the LLM is enabled.
+          type: boolean
+        test_model_parameters:
+          description: Any additional parameters that are required for the LLM during
+            the test call.
+          type: object
+          additionalProperties: true
+          example:
+            max_tokens: 512
+        capabilities:
+          $ref: '#/components/schemas/LLMCapabilities'
+    UpdateOpenAILLMRequest:
+      description: Request to update an OpenAI-compatible Large Language Model connection.
+        All fields are optional.
+      type: object
+      allOf:
+      - $ref: '#/components/schemas/OpenAILLMUpdateBase'
+      - type: object
+        properties:
+          type:
+            description: Must be "openai-compatible" for OpenAI and OpenAI-compatible
+              APIs
+            type: string
+            default: openai-compatible
+      x-vectaraParents:
+      - UpdateLLMRequest
+    UpdateOpenAIResponsesLLMRequest:
+      description: Request to update an OpenAI Responses API Large Language Model
+        connection. All fields are optional.
+      type: object
+      allOf:
+      - $ref: '#/components/schemas/OpenAILLMUpdateBase'
+      - type: object
+        properties:
+          type:
+            description: Must be "openai-responses" for OpenAI Responses API
+            type: string
+            default: openai-responses
+      x-vectaraParents:
+      - UpdateLLMRequest
+    UpdateVertexAILLMRequest:
+      description: Request to update a Vertex AI Large Language Model connection.
+        All fields are optional.
+      type: object
+      properties:
+        type:
+          description: Must be "vertex-ai" for Google Cloud Vertex AI Gemini models
+          type: string
+          default: vertex-ai
+        model:
+          description: The model identifier to use for this LLM.
+          type: string
+          minLength: 1
+        uri:
+          description: The API endpoint for this LLM.
+          type: string
+          format: uri
+        description:
+          description: Description of the LLM.
+          type: string
+          nullable: false
+        auth:
+          $ref: '#/components/schemas/VertexAiAuth'
+        enabled:
+          description: Whether the LLM is enabled.
+          type: boolean
+        test_model_parameters:
+          description: Any additional parameters that are required for the LLM during
+            the test call.
+          type: object
+          additionalProperties: true
+        capabilities:
+          $ref: '#/components/schemas/LLMCapabilities'
+      x-vectaraParents:
+      - UpdateLLMRequest
+    UpdateAnthropicLLMRequest:
+      description: Request to update an Anthropic Large Language Model connection.
+        All fields are optional.
+      type: object
+      properties:
+        type:
+          description: Must be "anthropic" for Anthropic Claude models
+          type: string
+          default: anthropic
+        model:
+          description: The model identifier to use for this LLM.
+          type: string
+          minLength: 1
+        uri:
+          description: The API endpoint for this LLM.
+          type: string
+          format: uri
+        description:
+          description: Description of the LLM.
+          type: string
+          nullable: false
+        auth:
+          $ref: '#/components/schemas/AnthropicAuth'
+        headers:
+          description: Optional additional headers to send with the request
+          type: object
+          additionalProperties:
+            type: string
+        enabled:
+          description: Whether the LLM is enabled.
+          type: boolean
+        test_model_parameters:
+          description: Any additional parameters that are required for the LLM during
+            the test call.
+          type: object
+          additionalProperties: true
+        capabilities:
+          $ref: '#/components/schemas/LLMCapabilities'
+      x-vectaraParents:
+      - UpdateLLMRequest
+    UpdateLLMRequest:
+      description: Request to update a Large Language Model connection. All fields
+        are optional - only provide fields you want to change. Only the name field
+        is immutable.
+      type: object
+      discriminator:
+        propertyName: type
+        mapping:
+          openai-compatible: '#/components/schemas/UpdateOpenAILLMRequest'
+          openai-responses: '#/components/schemas/UpdateOpenAIResponsesLLMRequest'
+          vertex-ai: '#/components/schemas/UpdateVertexAILLMRequest'
+          anthropic: '#/components/schemas/UpdateAnthropicLLMRequest'
+      oneOf:
+      - $ref: '#/components/schemas/UpdateOpenAILLMRequest'
+      - $ref: '#/components/schemas/UpdateOpenAIResponsesLLMRequest'
+      - $ref: '#/components/schemas/UpdateVertexAILLMRequest'
+      - $ref: '#/components/schemas/UpdateAnthropicLLMRequest'
     ChatCompletionRequestMessage:
       description: A message in the chat completion request, representing part of
         the conversation.
@@ -10551,6 +10989,113 @@ components:
           type: string
           description: The name of the author of this message, used to connect messages
             in a conversation.
+    JsonSchemaDefinition:
+      description: A JSON Schema definition for specifying data structure. Supports
+        recursive schemas for nested objects.
+      type: object
+      required:
+      - type
+      properties:
+        type:
+          description: The JSON type for this schema element.
+          type: string
+          enum:
+          - object
+          - array
+          - string
+          - number
+          - integer
+          - boolean
+        properties:
+          description: Property definitions when type is 'object'. Each key maps to
+            a nested JsonSchemaDefinition.
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/JsonSchemaDefinition'
+        required:
+          description: List of required property names when type is 'object'.
+          type: array
+          items:
+            type: string
+        additionalProperties:
+          description: Whether to allow additional properties beyond those defined.
+          type: boolean
+          default: false
+        items:
+          description: Schema for array items when type is 'array'.
+          $ref: '#/components/schemas/JsonSchemaDefinition'
+        enum:
+          description: Allowed values for this schema element.
+          type: array
+        description:
+          description: Human-readable description of this schema element.
+          type: string
+    JsonSchemaSpec:
+      description: Specification wrapper for a named JSON schema.
+      type: object
+      required:
+      - name
+      - schema
+      properties:
+        description:
+          description: A description of what the response format is for, used by the
+            model to determine how to respond in the format.
+          type: string
+        name:
+          description: A unique name identifier for this schema.
+          type: string
+          pattern: ^[a-zA-Z0-9_-]+$
+          minLength: 1
+        strict:
+          description: 'When true, enforces strict schema adherence. The model will
+            always follow the exact schema structure.
+
+            When strict mode is enabled, the schema must follow these rules:
+
+            - `additionalProperties: false` must be set on all object types
+
+            - All properties must be listed in the `required` array
+
+            - Maximum 100 properties total, with max 5 levels of nesting
+
+            - Unsupported keywords: minLength, maxLength, pattern, minimum, maximum,
+            minItems, maxItems
+
+            - Root schema cannot use `anyOf` type
+
+            '
+          type: boolean
+          nullable: true
+        schema:
+          description: The JSON Schema definition that the model output must conform
+            to.
+          $ref: '#/components/schemas/JsonSchemaDefinition'
+    ResponseFormat:
+      description: 'Specifies the format the model must output.
+
+        - `text`: Plain text responses (default).
+
+        - `json_object`: Ensures the response is valid JSON.
+
+        - `json_schema`: Ensures the response conforms to the provided JSON schema.
+
+        '
+      type: object
+      required:
+      - type
+      properties:
+        type:
+          description: The format type. Use 'json_schema' for structured outputs,
+            'json_object' for basic JSON mode, or 'text' for plain text.
+          type: string
+          default: text
+          enum:
+          - json_schema
+          - json_object
+          - text
+        json_schema:
+          description: The JSON schema specification. Required when type is 'json_schema'.
+          $ref: '#/components/schemas/JsonSchemaSpec'
     CreateChatCompletionRequest:
       description: The request object for creating a chat completion with an OpenAI-compatible
         interface. This object is compatible with OpenAI's chat completion schema
@@ -10575,6 +11120,9 @@ components:
           description: Optional. When set to `true`, the API streams partial message
             deltas as they become available, similar to ChatGPT's streaming mode.
           default: false
+        response_format:
+          description: Specifies the output format for the model response.
+          $ref: '#/components/schemas/ResponseFormat'
       additionalProperties: true
     ChatCompletionResponseMessage:
       description: A message in the chat completion response from the assistant.
@@ -11087,6 +11635,7 @@ components:
           enum:
           - rebuild_vector_index
           - replace_filter_attributes
+          - bulk_delete_documents
           - unknown
         corpus_keys:
           description: The corpora that this job belongs to. It may not belong to
@@ -11136,6 +11685,7 @@ components:
       - agent_administrator
       - agent_viewer
       - agent_developer
+      - agent_user
     CorpusRole:
       description: Corpus-specific role assignment.
       type: object
@@ -11368,8 +11918,26 @@ components:
         enabled:
           description: If this API key is enabled.
           type: boolean
+        api_roles:
+          description: Customer-level roles for this API key.
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiRole'
         api_key_role:
+          deprecated: true
+          description: 'Deprecated: Use api_roles instead. Legacy role of the API
+            key.'
           $ref: '#/components/schemas/ApiKeyRole'
+        corpus_roles:
+          description: Corpus-specific role assignments for this API key.
+          type: array
+          items:
+            $ref: '#/components/schemas/CorpusRole'
+        agent_roles:
+          description: Agent-specific role assignments for this API key.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentRole'
         api_policy:
           $ref: '#/components/schemas/ApiPolicy'
     ListApiKeysResponse:
@@ -11390,18 +11958,35 @@ components:
         name:
           description: The human-readable name of the API key.
           type: string
+        api_roles:
+          description: Customer-level roles for this API key.
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiRole'
         api_key_role:
+          deprecated: true
+          description: 'Deprecated: Use api_roles instead. Legacy role of the API
+            key.'
           $ref: '#/components/schemas/ApiKeyRole'
         corpus_keys:
-          description: Corpora this API key has roles on if it is not a Personal API
-            key. This property should be null or missing if this `api_key_role` is
-            `personal`.
+          deprecated: true
+          description: 'Deprecated: Use corpus_roles instead. Corpora this API key
+            has roles on.'
           type: array
           items:
             $ref: '#/components/schemas/CorpusKey'
+        corpus_roles:
+          description: Corpus-specific role assignments for this API key.
+          type: array
+          items:
+            $ref: '#/components/schemas/CorpusRole'
+        agent_roles:
+          description: Agent-specific role assignments for this API key.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentRole'
       required:
       - name
-      - api_key_role
     UpdateApiKeyRequest:
       description: Request to update an existing API key's properties or permissions.
       type: object
@@ -11436,6 +12021,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ApiRole'
+        corpus_roles:
+          description: Corpus-specific role assignments for this App Client.
+          type: array
+          items:
+            $ref: '#/components/schemas/CorpusRole'
+        agent_roles:
+          description: Agent-specific role assignments for this App Client.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentRole'
         api_policy:
           $ref: '#/components/schemas/ApiPolicy'
     ListAppClientsResponse:
@@ -11469,6 +12064,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ApiRole'
+        corpus_roles:
+          description: Corpus-specific role assignments for this App Client.
+          type: array
+          items:
+            $ref: '#/components/schemas/CorpusRole'
+        agent_roles:
+          description: Agent-specific role assignments for this App Client.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentRole'
       required:
       - name
       - type
@@ -11498,6 +12103,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ApiRole'
+        corpus_roles:
+          description: The new corpus role assignments. These will replace the current
+            corpus roles.
+          type: array
+          items:
+            $ref: '#/components/schemas/CorpusRole'
+        agent_roles:
+          description: The new agent role assignments. These will replace the current
+            agent roles.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentRole'
     ToolServerId:
       description: Unique identifier for a tool server.
       type: string
@@ -11739,6 +12356,27 @@ components:
       - description
       - enabled
       - input_schema
+    DynamicVectaraTool:
+      description: 'A tool type for built-in Vectara tools that have implementations
+        within the platform but do not have a dedicated tool type schema. Examples
+        include tools like `sub_agent`, `corpora_search`, `web_search`, and similar
+        platform-provided capabilities. Use the List Tools endpoint to discover available
+        tools and obtain the `tool_id` required for configuration.
+
+        '
+      allOf:
+      - $ref: '#/components/schemas/ToolBase'
+      - type: object
+        properties:
+          type:
+            description: This should always be `dynamic_vectara`.
+            type: string
+            default: dynamic_vectara
+            example: dynamic_vectara
+        required:
+        - type
+      x-vectaraParents:
+      - Tool
     McpToolAnnotations:
       description: Optional hints about tool behaviour/metadata.
       type: object
@@ -11805,6 +12443,21 @@ components:
             type: string
             default: web_search
             example: web_search
+        required:
+        - type
+      x-vectaraParents:
+      - Tool
+    WebGetTool:
+      description: A web get tool that fetches content from URLs using HTTP requests.
+      allOf:
+      - $ref: '#/components/schemas/ToolBase'
+      - type: object
+        properties:
+          type:
+            description: This should always be `web_get`.
+            type: string
+            default: web_get
+            example: web_get
         required:
         - type
       x-vectaraParents:
@@ -11912,74 +12565,34 @@ components:
         Currently supports Python 3.12 with a curated set of libraries.
 
         '
-      type: object
-      properties:
-        type:
-          description: This should always be `lambda`.
-          type: string
-          default: lambda
-          example: lambda
-        id:
-          $ref: '#/components/schemas/ToolId'
-        name:
-          description: Unique identifier for the tool.
-          type: string
-        title:
-          description: Human-readable title of the tool.
-          type: string
-        description:
-          description: A detailed description of what the function does and how it
-            can be used.
-          type: string
-        language:
-          description: The programming language of the lambda function. Currently
-            only Python 3.12 is supported.
-          type: string
-          enum:
-          - python
-          default: python
-          example: python
-        enabled:
-          description: Whether the tool is currently enabled and available for use.
-          type: boolean
-          default: true
-        created_at:
-          description: Timestamp when the tool was created.
-          type: string
-          format: date-time
-        updated_at:
-          description: Timestamp when the tool was last updated.
-          type: string
-          format: date-time
-        input_schema:
-          description: The schema that defines the expected input structure for the
-            function.
-          type: object
-          additionalProperties: true
-          example:
+      allOf:
+      - $ref: '#/components/schemas/ToolBase'
+      - type: object
+        properties:
+          type:
+            description: This should always be `lambda`.
+            type: string
+            default: lambda
+            example: lambda
+          language:
+            description: The programming language of the lambda function. Currently
+              only Python 3.12 is supported.
+            type: string
+            enum:
+            - python
+            default: python
+            example: python
+          output_schema:
+            description: The schema that defines the expected output structure from
+              the function.
             type: object
-            properties:
-              data:
-                type: array
-                description: Input data to process.
-              threshold:
-                type: number
-                description: Threshold value for filtering.
-        output_schema:
-          description: The schema that defines the expected output structure from
-            the function.
-          type: object
-          additionalProperties: true
-        function_definition:
-          $ref: '#/components/schemas/FunctionDefinition'
-      required:
-      - type
-      - id
-      - name
-      - description
-      - language
-      - enabled
-      - function_definition
+            additionalProperties: true
+          function_definition:
+            $ref: '#/components/schemas/FunctionDefinition'
+        required:
+        - type
+        - language
+        - function_definition
       x-vectaraParents:
       - Tool
     StructuredIndexingTool:
@@ -12104,12 +12717,15 @@ components:
     Tool:
       description: A tool that can be used by agents to perform specific actions or
         operations.
+      x-vectara-base-schema: '#/ToolBase'
       discriminator:
         propertyName: type
         mapping:
+          dynamic_vectara: '#/components/schemas/DynamicVectaraTool'
           mcp: '#/components/schemas/McpTool'
           corpora_search: '#/components/schemas/CorporaSearchTool'
           web_search: '#/components/schemas/WebSearchTool'
+          web_get: '#/components/schemas/WebGetTool'
           lambda: '#/components/schemas/LambdaTool'
           structured_indexing: '#/components/schemas/StructuredIndexingTool'
           sub_agent: '#/components/schemas/SubAgentTool'
@@ -12119,9 +12735,11 @@ components:
           image_read: '#/components/schemas/ImageReadTool'
           document_conversion: '#/components/schemas/DocumentConversionTool'
       oneOf:
+      - $ref: '#/components/schemas/DynamicVectaraTool'
       - $ref: '#/components/schemas/McpTool'
       - $ref: '#/components/schemas/CorporaSearchTool'
       - $ref: '#/components/schemas/WebSearchTool'
+      - $ref: '#/components/schemas/WebGetTool'
       - $ref: '#/components/schemas/LambdaTool'
       - $ref: '#/components/schemas/StructuredIndexingTool'
       - $ref: '#/components/schemas/SubAgentTool'
@@ -12717,15 +13335,11 @@ components:
       required:
       - instructions
       - metadata
-    CreateInitialInstructionRequest:
-      description: Request object for creating a new initial instruction.
+    InstructionRequestBase:
+      description: Base properties for creating an instruction, without the type discriminator
+        field.
       type: object
       properties:
-        type:
-          description: The type of instruction to create.
-          type: string
-          default: initial
-          example: initial
         name:
           $ref: '#/components/schemas/InstructionName'
         description:
@@ -12750,9 +13364,21 @@ components:
           default: true
           example: true
       required:
-      - type
       - name
       - template
+    CreateInitialInstructionRequest:
+      description: Request object for creating a new initial instruction.
+      allOf:
+      - $ref: '#/components/schemas/InstructionRequestBase'
+      - type: object
+        properties:
+          type:
+            description: The type of instruction to create.
+            type: string
+            default: initial
+            example: initial
+        required:
+        - type
       x-vectaraParents:
       - CreateInstructionRequest
     CreateInstructionRequest:
@@ -12858,6 +13484,48 @@ components:
       minLength: 1
       maxLength: 50
       example: Customer Support Agent
+    InlineDynamicVectaraToolConfiguration:
+      title: InlineDynamicVectaraToolConfiguration
+      description: 'An inline configuration for built-in Vectara tools that have implementations
+        within the platform but do not have a dedicated configuration type schema.
+        Use the List Tools endpoint to discover available tools and obtain the `tool_id`
+        required for this configuration.
+
+        '
+      type: object
+      properties:
+        type:
+          type: string
+          description: The type of tool configuration, which is always 'dynamic_vectara'
+            for generic Vectara tool configurations.
+          default: dynamic_vectara
+        tool_id:
+          $ref: '#/components/schemas/ToolId'
+        description_template:
+          $ref: '#/components/schemas/ToolDescriptionTemplate'
+        argument_override:
+          description: "Optional hardcoded arguments for tool calls. The key specifies\
+            \ the location in the tool arguments to overide, and the value specifies\
+            \ what to override with. The LLM will not be able to change the parameters,\
+            \ nor know those values exist within the tool.\n\nThe values can also\
+            \ be dynamic references to context values using $ref with dot notation\
+            \ path syntax:\n- Static value: \"fixed_value\" or 123\n- Dynamic reference:\
+            \ `{\"$ref\": \"session.metadata.field_name\"}`\n\nReferences are resolved\
+            \ at runtime from context:\n- session.metadata.* - Access session metadata\
+            \ fields\n- agent.metadata.* - Access agent metadata fields\n\nExample:\n\
+            \  `{\"query\": {\"$ref\": \".session.metadata.query\"}}`\n\nIf you want\
+            \ to have a real value `\"$ref\"` use `\"$$ref\"`, that is you can escape\
+            \ the first $ by using $$."
+          type: object
+          additionalProperties: true
+          example:
+            custom_param: value
+            limit: 10
+      required:
+      - tool_id
+      - type
+      x-vectaraParents:
+      - AgentToolConfiguration
     InlineMcpToolConfiguration:
       title: InlineMcpToolConfiguration
       description: An MCP tool configuration defined inline in the agent.
@@ -12902,22 +13570,136 @@ components:
       properties:
         query:
           description: The search query string, which is the question the user is
-            asking. If not provided, will be filled in by the LLM.
+            asking. If not provided, will be filled in by the agent.
           type: string
           maxLength: 5000
           example: Am I allowed to bring pets to work?
       additionalProperties: false
-    CorporaSearchQueryConfiguration:
-      description: User-configurable settings for corpora search that are not exposed
-        to the LLM.
+    EagerReference:
+      title: EagerReference
+      description: 'A reference to a value resolved from the session context at the
+        start of each turn.
+
+        Resolution occurs when a new message is submitted to the agent session, before
+        any
+
+        LLM processing begins. The resolved value remains constant throughout the
+        turn and
+
+        is not re-evaluated during the agent''s response or subsequent tool calls
+        within the same turn.
+
+        '
+      type: object
+      x-vectaraParents:
+      - AgentKeyedSearchCorpusCorpusKey
+      - AgentKeyedSearchCorpusMetadataFilter
+      properties:
+        $ref:
+          type: string
+          description: A dot-notation path to the value in the session context.
+          example: session.metadata.filters.user_access
+      required:
+      - $ref
+      additionalProperties: false
+    AgentKeyedSearchCorpus:
+      title: AgentKeyedSearchCorpus
+      description: Agent-specific keyed search corpus that supports eager references
+        for corpus_key and metadata_filter.
+      type: object
+      properties:
+        corpus_key:
+          description: 'The corpus to search. Can be either:
+
+            - A static string: "my-corpus"
+
+            - An EagerReference object: {"$ref": "session.metadata.corpus"}
+
+
+            When an EagerReference is provided, the $ref path is resolved from the
+            session context
+
+            at the start of each turn, before LLM processing begins.
+
+            '
+          oneOf:
+          - type: string
+          - $ref: '#/components/schemas/EagerReference'
+        custom_dimensions:
+          $ref: '#/components/schemas/CustomDimensions'
+        metadata_filter:
+          description: 'The filter to narrow search results. Can be either:
+
+            - A static string: "doc.department = ''engineering''"
+
+            - An EagerReference object: {"$ref": "session.metadata.filters.user"}
+
+
+            When an EagerReference is provided, the $ref path is resolved from the
+            session context
+
+            at the start of each turn, before LLM processing begins.
+
+            '
+          oneOf:
+          - type: string
+          - $ref: '#/components/schemas/EagerReference'
+        lexical_interpolation:
+          description: How much to weigh lexical scores compared to the embedding
+            score.
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+        semantics:
+          $ref: '#/components/schemas/SearchSemantics'
+        query:
+          description: Query override for this specific corpus.
+          type: string
+          maxLength: 5000
+      required:
+      - corpus_key
+    AgentSearchCorporaParameters:
+      title: AgentSearchCorporaParameters
+      description: Agent-specific search parameters that support eager references.
+      type: object
+      properties:
+        corpora:
+          description: The corpora to search, with support for eager references.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentKeyedSearchCorpus'
+          minItems: 1
+        offset:
+          description: Number of results to skip for pagination.
+          type: integer
+          format: int32
+          minimum: 0
+          default: 0
+        limit:
+          description: Maximum number of results to return.
+          type: integer
+          format: int32
+          minimum: 1
+          default: 10
+        context_configuration:
+          $ref: '#/components/schemas/ContextConfiguration'
+        reranker:
+          $ref: '#/components/schemas/SearchReranker'
+      required:
+      - corpora
+    AgentCorporaSearchQueryConfiguration:
+      title: AgentCorporaSearchQueryConfiguration
+      description: Agent-specific query configuration that supports eager references.
+        Use this in agent tool configurations when turn-start resolution is needed.
       type: object
       properties:
         search:
-          $ref: '#/components/schemas/SearchCorporaParameters'
+          $ref: '#/components/schemas/AgentSearchCorporaParameters'
         generation:
           $ref: '#/components/schemas/GenerationParameters'
         save_history:
-          description: Indicates whether to save the query to query history.
+          description: Whether to save the query to history.
           type: boolean
       required:
       - search
@@ -12940,8 +13722,9 @@ components:
           $ref: '#/components/schemas/CorporaSearchToolParameters'
         query_configuration:
           description: User-configurable settings for the corpus search that are not
-            exposed to the LLM.
-          $ref: '#/components/schemas/CorporaSearchQueryConfiguration'
+            exposed to the LLM. Supports dynamic references for runtime resolution
+            from session context.
+          $ref: '#/components/schemas/AgentCorporaSearchQueryConfiguration'
       required:
       - type
       - query_configuration
@@ -12949,7 +13732,7 @@ components:
       - AgentToolConfiguration
     WebSearchToolParameters:
       description: Configurable parameters for the web search tool. If not provided,
-        will be filled in by the LLM.
+        will be filled in by the agent.
       type: object
       properties:
         query:
@@ -12960,6 +13743,7 @@ components:
           description: Maximum number of results to return.
           type: integer
           minimum: 1
+          maximum: 20
           example: 10
         provider:
           description: Search provider to use.
@@ -13013,6 +13797,90 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
+    WebGetToolParameters:
+      description: Configurable parameters for the web get tool. If not provided,
+        will be filled in by the agent.
+      type: object
+      properties:
+        url:
+          description: The URL to fetch content from.
+          oneOf:
+          - type: string
+          - $ref: '#/components/schemas/EagerReference'
+        method:
+          description: HTTP method to use.
+          type: string
+          enum:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - HEAD
+        headers:
+          description: HTTP headers to include in the request.
+          oneOf:
+          - type: object
+            additionalProperties:
+              type: string
+          - $ref: '#/components/schemas/EagerReference'
+        body:
+          description: Request body for POST/PUT requests.
+          oneOf:
+          - type: string
+          - $ref: '#/components/schemas/EagerReference'
+        follow_redirects:
+          description: Whether to follow HTTP redirects.
+          oneOf:
+          - type: boolean
+          - $ref: '#/components/schemas/EagerReference'
+        timeout_seconds:
+          description: Request timeout in seconds.
+          oneOf:
+          - type: integer
+          - $ref: '#/components/schemas/EagerReference'
+        head_lines:
+          description: Number of lines from start to include in response.
+          oneOf:
+          - type: integer
+          - $ref: '#/components/schemas/EagerReference'
+        tail_lines:
+          description: Number of lines from end to include in response.
+          oneOf:
+          - type: integer
+          - $ref: '#/components/schemas/EagerReference'
+        ssl_verify:
+          description: Whether to verify SSL certificates.
+          oneOf:
+          - type: boolean
+          - $ref: '#/components/schemas/EagerReference'
+        max_content_bytes:
+          description: Maximum response size in bytes before truncation.
+          oneOf:
+          - type: integer
+          - $ref: '#/components/schemas/EagerReference'
+      additionalProperties: false
+    InlineWebGetToolConfiguration:
+      title: InlineWebGetToolConfiguration
+      description: A web get tool configuration defined inline in the agent for fetching
+        content from URLs.
+      type: object
+      properties:
+        type:
+          type: string
+          description: The type of tool configuration, which is always 'web_get' for
+            inline web get tool configurations.
+          default: web_get
+        description_template:
+          $ref: '#/components/schemas/ToolDescriptionTemplate'
+        argument_override:
+          description: Optional hardcoded arguments for the web get tool call. When
+            specified, these values will be used instead of allowing the LLM to fill
+            in those parameters.
+          $ref: '#/components/schemas/WebGetToolParameters'
+      required:
+      - type
+      x-vectaraParents:
+      - AgentToolConfiguration
     InlineLambdaToolConfiguration:
       title: InlineLambdaToolConfiguration
       description: A lambda tool configuration defined inline in the agent for executing
@@ -13048,7 +13916,7 @@ components:
       properties:
         corpus_key:
           description: The key identifying the target corpus for document indexing.
-            If not provided, will be filled in by the LLM.
+            If not provided, will be filled in by the agent.
           type: string
           example: my-knowledge-base
         document_id:
@@ -13121,6 +13989,23 @@ components:
           minimum: 1
           example: 60
       additionalProperties: false
+    SubAgentSessionMode:
+      description: 'Controls session behavior for sub-agent invocations:
+
+        - llm_controlled: LLM decides whether to create new or resume existing session
+
+        - persistent: Always reuse the same session (created on first invocation)
+
+        - ephemeral: Always create a new session on each invocation
+
+        '
+      type: string
+      enum:
+      - llm_controlled
+      - persistent
+      - ephemeral
+      default: llm_controlled
+      example: llm_controlled
     SubAgentConfiguration:
       description: User-configurable settings for the sub-agent tool. These parameters
         are never exposed to the agent.
@@ -13128,6 +14013,16 @@ components:
       properties:
         agent_key:
           $ref: '#/components/schemas/AgentKey'
+        session_mode:
+          $ref: '#/components/schemas/SubAgentSessionMode'
+        session_metadata:
+          description: Optional metadata to associate with the sub-agent session.
+            Can contain any key-value pairs.
+          type: object
+          additionalProperties: true
+          example:
+            source: parent_agent
+            task_type: code_review
       required:
       - agent_key
     InlineSubAgentToolConfiguration:
@@ -13179,6 +14074,26 @@ components:
           format: int32
           example: 200
       additionalProperties: false
+    ArtifactReadConfiguration:
+      description: User-configurable settings for the artifact read tool.
+      type: object
+      properties:
+        max_size_bytes:
+          description: Maximum file size in bytes for full reads without line ranges.
+            Defaults to 256KB.
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 10485760
+          default: 262144
+        max_lines:
+          description: Maximum number of lines for range-based reads. Defaults to
+            200.
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 10000
+          default: 200
     InlineArtifactReadToolConfiguration:
       title: InlineArtifactReadToolConfiguration
       description: An artifact read tool configuration defined inline in the agent
@@ -13194,6 +14109,8 @@ components:
           $ref: '#/components/schemas/ToolDescriptionTemplate'
         argument_override:
           $ref: '#/components/schemas/ArtifactReadToolParameters'
+        tool_configuration:
+          $ref: '#/components/schemas/ArtifactReadConfiguration'
       required:
       - type
       x-vectaraParents:
@@ -13325,9 +14242,11 @@ components:
       discriminator:
         propertyName: type
         mapping:
+          dynamic_vectara: '#/components/schemas/InlineDynamicVectaraToolConfiguration'
           mcp: '#/components/schemas/InlineMcpToolConfiguration'
           corpora_search: '#/components/schemas/InlineCorporaSearchToolConfiguration'
           web_search: '#/components/schemas/InlineWebSearchToolConfiguration'
+          web_get: '#/components/schemas/InlineWebGetToolConfiguration'
           lambda: '#/components/schemas/InlineLambdaToolConfiguration'
           structured_indexing: '#/components/schemas/InlineStructuredIndexingToolConfiguration'
           sub_agent: '#/components/schemas/InlineSubAgentToolConfiguration'
@@ -13336,9 +14255,11 @@ components:
           image_read: '#/components/schemas/InlineImageReadToolConfiguration'
           document_conversion: '#/components/schemas/InlineDocumentConversionToolConfiguration'
       oneOf:
+      - $ref: '#/components/schemas/InlineDynamicVectaraToolConfiguration'
       - $ref: '#/components/schemas/InlineMcpToolConfiguration'
       - $ref: '#/components/schemas/InlineCorporaSearchToolConfiguration'
       - $ref: '#/components/schemas/InlineWebSearchToolConfiguration'
+      - $ref: '#/components/schemas/InlineWebGetToolConfiguration'
       - $ref: '#/components/schemas/InlineLambdaToolConfiguration'
       - $ref: '#/components/schemas/InlineStructuredIndexingToolConfiguration'
       - $ref: '#/components/schemas/InlineSubAgentToolConfiguration'
@@ -13457,7 +14378,7 @@ components:
       title: InlineInstruction
       description: An instruction defined inline in the request.
       allOf:
-      - $ref: '#/components/schemas/CreateInitialInstructionRequest'
+      - $ref: '#/components/schemas/InstructionRequestBase'
       - type: object
         properties:
           type:
@@ -13506,6 +14427,51 @@ components:
       - type
       x-vectaraParents:
       - AgentOutputParser
+    StructuredOutputParser:
+      title: StructuredOutputParser
+      description: 'Parses agent output as structured JSON conforming to a specified
+        schema.
+
+        Uses the model''s native structured outputs capability to guarantee valid
+        JSON
+
+        that adheres to the provided schema. This is useful when you need the agent''s
+
+        final response in a specific format for downstream processing.
+
+
+        When this parser is configured, the agent emits a StructuredOutputEvent instead
+
+        of AgentOutputEvent. The StructuredOutputEvent contains the validated JSON
+        content
+
+        along with the schema name for identification.
+
+
+        Note: When using structured outputs, the agent can still use tools normally.
+
+        The schema constraint only applies to the agent''s final text response.
+
+        When streaming, the structured output is delivered as a single complete event
+
+        rather than being streamed in chunks.
+
+        '
+      type: object
+      properties:
+        type:
+          description: The type of output parser, which is always 'structured' for
+            this parser type.
+          type: string
+          default: structured
+          example: structured
+        json_schema:
+          $ref: '#/components/schemas/JsonSchemaSpec'
+      required:
+      - type
+      - json_schema
+      x-vectaraParents:
+      - AgentOutputParser
     AgentOutputParser:
       title: AgentOutputParser
       description: 'Configuration for how the agent''s output should be parsed and
@@ -13520,8 +14486,10 @@ components:
         propertyName: type
         mapping:
           default: '#/components/schemas/DefaultOutputParser'
+          structured: '#/components/schemas/StructuredOutputParser'
       oneOf:
       - $ref: '#/components/schemas/DefaultOutputParser'
+      - $ref: '#/components/schemas/StructuredOutputParser'
     ConversationalAgentStep:
       title: ConversationalAgentStep
       description: A step that receives instructions and responds through dialogue.
@@ -14289,6 +15257,70 @@ components:
       x-vectaraParents:
       - AgentEvent
       - AgentStreamedResponse
+    StructuredOutputEvent:
+      title: StructuredOutputEvent
+      description: 'An event representing a complete agent response with structured
+        JSON content conforming to a schema.
+
+
+        This event is published instead of AgentOutputEvent when the agent''s output_parser
+        is configured
+
+        with type "structured". It contains the LLM''s final response parsed as validated
+        JSON that
+
+        conforms to the schema specified in the StructuredOutputParser configuration.
+
+
+        When streaming is enabled, this event appears as a single complete event (not
+        streamed in chunks)
+
+        after any tool interactions are complete. The content field contains the parsed
+        JSON,
+
+        and schema_name identifies which schema the content was validated against.
+
+        '
+      type: object
+      properties:
+        id:
+          description: The unique identifier for the event.
+          type: string
+          pattern: aev_[0-9a-zA-Z_-]+$
+          example: aev_structured_001
+        session_key:
+          $ref: '#/components/schemas/AgentSessionKey'
+          description: The key of the session this event belongs to.
+        type:
+          description: The type of event.
+          type: string
+          default: structured_output
+          example: structured_output
+        schema_name:
+          description: The name of the JSON schema that the content conforms to.
+          type: string
+          example: order_response
+        content:
+          description: The structured JSON content conforming to the output schema.
+          example:
+            result: success
+            data:
+              id: 123
+        created_at:
+          description: Timestamp when the event was created.
+          type: string
+          format: date-time
+          example: '2024-01-15T10:35:00Z'
+      required:
+      - id
+      - session_key
+      - type
+      - schema_name
+      - content
+      - created_at
+      x-vectaraParents:
+      - AgentEvent
+      - AgentStreamedResponse
     ContextLimitExceededEvent:
       title: ContextLimitExceededEvent
       description: An event indicating the current request exceeded the LLM's context
@@ -14393,8 +15425,10 @@ components:
           tool_output: '#/components/schemas/ToolOutputEvent'
           thinking: '#/components/schemas/ThinkingEvent'
           agent_output: '#/components/schemas/AgentOutputEvent'
+          structured_output: '#/components/schemas/StructuredOutputEvent'
           context_limit_exceeded: '#/components/schemas/ContextLimitExceededEvent'
           image_read: '#/components/schemas/ImageReadEvent'
+          guardrail_check: '#/components/schemas/GuardrailCheckEvent'
       oneOf:
       - $ref: '#/components/schemas/InputMessageEvent'
       - $ref: '#/components/schemas/ArtifactUploadEvent'
@@ -14402,6 +15436,7 @@ components:
       - $ref: '#/components/schemas/ToolOutputEvent'
       - $ref: '#/components/schemas/ThinkingEvent'
       - $ref: '#/components/schemas/AgentOutputEvent'
+      - $ref: '#/components/schemas/StructuredOutputEvent'
       - $ref: '#/components/schemas/ContextLimitExceededEvent'
       - $ref: '#/components/schemas/ImageReadEvent'
       properties:
@@ -14423,8 +15458,10 @@ components:
           - tool_output
           - thinking
           - agent_output
+          - structured_output
           - context_limit_exceeded
           - image_read
+          - guardrail_check
           example: input_message
         created_at:
           description: Timestamp when the event was created.
@@ -14596,6 +15633,7 @@ components:
           streaming_thinking_end: '#/components/schemas/StreamingThinkingEnd'
           tool_input: '#/components/schemas/ToolInputEvent'
           tool_output: '#/components/schemas/ToolOutputEvent'
+          structured_output: '#/components/schemas/StructuredOutputEvent'
           context_limit_exceeded: '#/components/schemas/ContextLimitExceededEvent'
           image_read: '#/components/schemas/ImageReadEvent'
           error: '#/components/schemas/StreamError'
@@ -14607,6 +15645,7 @@ components:
       - $ref: '#/components/schemas/StreamingThinkingEnd'
       - $ref: '#/components/schemas/ToolInputEvent'
       - $ref: '#/components/schemas/ToolOutputEvent'
+      - $ref: '#/components/schemas/StructuredOutputEvent'
       - $ref: '#/components/schemas/ContextLimitExceededEvent'
       - $ref: '#/components/schemas/ImageReadEvent'
       - $ref: '#/components/schemas/StreamError'
