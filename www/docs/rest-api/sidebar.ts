@@ -440,6 +440,12 @@ const sidebar: SidebarsConfig = {
         },
         {
           type: "doc",
+          id: "rest-api/bulk-delete-corpus-documents",
+          label: "Bulk delete documents from a corpus",
+          className: "api-method delete",
+        },
+        {
+          type: "doc",
           id: "rest-api/delete-corpus-document",
           label: "Delete a document",
           className: "api-method delete",
@@ -629,6 +635,12 @@ const sidebar: SidebarsConfig = {
           id: "rest-api/delete-llm",
           label: "Delete an LLM",
           className: "api-method delete",
+        },
+        {
+          type: "doc",
+          id: "rest-api/update-llm",
+          label: "Update an LLM",
+          className: "api-method patch",
         },
       ],
     },
