@@ -9057,6 +9057,18 @@ components:
           description: Weight to apply to this field during scoring (higher values
             increase importance of this field).
           default: 1
+        fuzzy:
+          type: boolean
+          default: true
+          description: Whether to apply fuzzy matching for typo tolerance.
+        prefix:
+          type: integer
+          minimum: 1
+          default: 3
+          nullable: true
+          description: Minimum query length to enable prefix matching. Set to null
+            to disable prefix matching. Prefix matching allows finding documents where
+            the field value starts with the query text.
       required:
       - field
       - query
@@ -10294,6 +10306,15 @@ components:
           description: Whether the model requires strict role alternation in conversations.
             When true, consecutive messages of the same role will be grouped together.
           type: boolean
+    LLMOwnership:
+      description: Indicates whether the LLM is provided by the platform or created
+        by the customer. Platform LLMs are pre-configured and cannot be modified or
+        deleted. Customer LLMs are created and managed by the customer.
+      type: string
+      enum:
+      - platform
+      - customer
+      example: platform
     Prompt:
       description: A prompt that can be used with a LLM. A prompt is the template
         that is used to render the text sent to the LLM. It also contains various
@@ -10345,6 +10366,10 @@ components:
           type: boolean
         capabilities:
           $ref: '#/components/schemas/LLMCapabilities'
+        ownership:
+          description: Indicates whether the LLM is provided by the platform (`platform`)
+            or created by the customer (`customer`).
+          $ref: '#/components/schemas/LLMOwnership'
         prompts:
           description: List of prompts that the model can use. This is deprecated;
             see `/v2/generation_presets` instead.
@@ -12513,6 +12538,16 @@ components:
 
         - Import from `typing` module when using complex types
 
+
+        **Docstring Parameter Descriptions:**
+
+        - Use docstrings to provide descriptions for parameters (Google, NumPy, ReST,
+        and Epydoc styles are supported)
+
+        - Parameter descriptions are extracted and included in the input schema
+
+        - This gives agents better context about how to use each parameter
+
         '
       type: object
       properties:
@@ -12812,22 +12847,42 @@ components:
             \ for automatic schema discovery.\n\n**Parameters**: Passed as keyword\
             \ arguments matched to the function signature.\n\n**Return types**: Can\
             \ return any JSON-serializable type (strings, numbers, booleans, lists,\
-            \ or objects).\n\n**Example: Returning a number**\n```python\ndef process(x:\
-            \ int, y: int) -> int:\n    return x + y\n```\n\n**Example: Returning\
-            \ a string**\n```python\ndef process(name: str) -> str:\n    return f\"\
-            Hello, {name}!\"\n```\n\n**Example: Returning a boolean**\n```python\n\
-            def process(value: int, threshold: int) -> bool:\n    return value > threshold\n\
-            ```\n\n**Example: Returning a list**\n```python\nfrom typing import List\n\
-            \ndef process(items: List[str]) -> List[str]:\n    return sorted(items)\n\
-            ```\n\n**Example: Returning an object (dict)**\n```python\ndef process(order_count:\
-            \ int, total_revenue: float, days_active: int = 1) -> dict:\n    score\
-            \ = (order_count * 10 + total_revenue * 0.1) / days_active\n    return\
-            \ {'score': round(score, 2), 'rating': 'high' if score > 100 else 'low'}\n\
-            ```\n\nFor complex types, use the `typing` module:\n\n```python\nfrom\
-            \ typing import List, Dict\n\ndef process(items: List[str], config: Dict[str,\
-            \ float]) -> dict:\n    count = len(items)\n    multiplier = config.get('multiplier',\
-            \ 1.0)\n    return {'count': count, 'adjusted': count * multiplier}\n\
-            ```\n"
+            \ or objects).\n\n**Parameter Descriptions**: Use docstrings to provide\
+            \ descriptions for parameters (Google, NumPy, ReST, and Epydoc styles\
+            \ are supported). These descriptions are automatically extracted and included\
+            \ in the input schema, giving agents better context about how to use each\
+            \ parameter.\n\n**Example with Google-style docstring:**\n```python\n\
+            def process(order_count: int, total_revenue: float, days_active: int =\
+            \ 1) -> dict:\n    \"\"\"Calculate customer engagement score.\n\n    Args:\n\
+            \        order_count: The number of orders placed by the customer.\n \
+            \       total_revenue: Total revenue in USD from the customer.\n     \
+            \   days_active: Number of days the customer was active (default: 1).\n\
+            \n    Returns:\n        A dict with the calculated score.\n    \"\"\"\n\
+            \    score = (order_count * 10 + total_revenue * 0.1) / days_active\n\
+            \    return {'score': round(score, 2)}\n```\n\nThis produces an input\
+            \ schema with descriptions:\n```json\n{\n  \"type\": \"object\",\n  \"\
+            properties\": {\n    \"order_count\": {\n      \"type\": \"integer\",\n\
+            \      \"description\": \"The number of orders placed by the customer.\"\
+            \n    },\n    \"total_revenue\": {\n      \"type\": \"number\",\n    \
+            \  \"description\": \"Total revenue in USD from the customer.\"\n    },\n\
+            \    \"days_active\": {\n      \"type\": \"integer\",\n      \"description\"\
+            : \"Number of days the customer was active (default: 1).\"\n    }\n  },\n\
+            \  \"required\": [\"order_count\", \"total_revenue\"]\n}\n```\n\n**Example:\
+            \ Returning a number**\n```python\ndef process(x: int, y: int) -> int:\n\
+            \    return x + y\n```\n\n**Example: Returning a string**\n```python\n\
+            def process(name: str) -> str:\n    return f\"Hello, {name}!\"\n```\n\n\
+            **Example: Returning a boolean**\n```python\ndef process(value: int, threshold:\
+            \ int) -> bool:\n    return value > threshold\n```\n\n**Example: Returning\
+            \ a list**\n```python\nfrom typing import List\n\ndef process(items: List[str])\
+            \ -> List[str]:\n    return sorted(items)\n```\n\n**Example: Returning\
+            \ an object (dict)**\n```python\ndef process(order_count: int, total_revenue:\
+            \ float, days_active: int = 1) -> dict:\n    score = (order_count * 10\
+            \ + total_revenue * 0.1) / days_active\n    return {'score': round(score,\
+            \ 2), 'rating': 'high' if score > 100 else 'low'}\n```\n\nFor complex\
+            \ types, use the `typing` module:\n\n```python\nfrom typing import List,\
+            \ Dict\n\ndef process(items: List[str], config: Dict[str, float]) -> dict:\n\
+            \    count = len(items)\n    multiplier = config.get('multiplier', 1.0)\n\
+            \    return {'count': count, 'adjusted': count * multiplier}\n```\n"
           type: string
           minLength: 1
           maxLength: 100000
