@@ -85,11 +85,11 @@ id: ${filename.split("/").slice(-1)}
 title: ${filename.split("/").slice(-1)}
 custom_edit_url: https://github.com/vectara/getting-started/blob/main/language-examples/${filename}
 sidebar_label: ${String(filename.split(".").slice(-1))
-  .replace("py", "Python")
-  .replace("cs", "C#")
-  .replace("php", "PHP")
-  .replace("js", "NodeJS")
-  .replace("java", "Java")}
+              .replace("py", "Python")
+              .replace("cs", "C#")
+              .replace("php", "PHP")
+              .replace("js", "NodeJS")
+              .replace("java", "Java")}
 ---
 
 ${
@@ -113,15 +113,11 @@ ${content}
   scripts: [
     { src: "/analytics.js", async: true },
     { src: "/scripts/reodev.js", async: true },
-    { src: "/js/cleanCardDescriptions.js", async: true },
   ],
 
   clientModules: ["./static/routeUpdateModule.js"],
 
-  themes: [
-    "docusaurus-theme-openapi-docs",
-    "@docusaurus/theme-mermaid",
-  ],
+  themes: ["docusaurus-theme-openapi-docs", "@docusaurus/theme-mermaid"],
 
   markdown: {
     mermaid: true, // Enable Mermaid parsing
@@ -129,7 +125,18 @@ ${content}
 
   themeConfig: {
     prism: {
-      additionalLanguages: ["bash", "python", "javascript", "json", "yaml", "sql", "http", "java", "php", "csharp"],
+      additionalLanguages: [
+        "bash",
+        "python",
+        "javascript",
+        "json",
+        "yaml",
+        "sql",
+        "http",
+        "java",
+        "php",
+        "csharp",
+      ],
       theme: themes.vsLight,
       darkTheme: themes.dracula,
     },
@@ -155,9 +162,7 @@ ${content}
           type: "dropdown",
           label: "SDKs",
           position: "left",
-          items: [
-            { label: "Python", to: "docs/sdk/vectara-python-sdk" },
-          ],
+          items: [{ label: "Python", to: "docs/sdk/vectara-python-sdk" }],
         },
         {
           type: "dropdown",
