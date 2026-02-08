@@ -9,7 +9,8 @@ import CodePanel from '@site/src/theme/CodePanel';
 Build your first RAG application with Vectara in 5 minutes. You'll upload a d
 ocument, query it, and get AI-generated answers with citations.
 
-Before you begin, you need: 
+Before you begin, you need:
+
 - A Vectara account ([sign up free](https://console.vectara.com/signup) - 30-day trial)
 - An API key (created in step 1)
 
@@ -50,46 +51,46 @@ Keep your API key secure. Don't commit it to version control or share it publicl
 A corpus is a container for your documents. Create one with a single API call:
 
 <CodePanel
-  snippets={[
-    {
-      language: 'bash',
-      code: `curl -X POST https://api.vectara.io/v2/corpora \\
-  -H "x-api-key: $VECTARA_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "key": "quickstart-corpus",
-    "name": "Quickstart Corpus",
-    "description": "My first corpus"
-  }'`
-    }
-  ]}
-  title="Create Corpus"
-  annotations={{
+snippets={[
+{
+language: 'bash',
+code: `curl -X POST https://api.vectara.io/v2/corpora \\
+-H "x-api-key: $VECTARA_API_KEY" \\
+-H "Content-Type: application/json" \\
+-d '{
+"key": "quickstart-corpus",
+"name": "Quickstart Corpus",
+"description": "My first corpus"
+}'`
+}
+]}
+title="Create Corpus"
+annotations={{
     bash: [
       { line: 2, text: 'Uses your API key from Step 1' },
       { line: 5, text: 'Unique identifier for this corpus' }
     ]
   }}
-  layout="stacked"
+layout="stacked"
 />
 
 **Expected response:**
 
 <CodePanel
-  snippets={[
-    {
-      language: 'json',
-      code: `{
-  "key": "quickstart-corpus",
-  "name": "Quickstart Corpus",
-  "description": "My first corpus",
-  "enabled": true,
-  "created_at": "2025-01-15T10:30:00Z"
+snippets={[
+{
+language: 'json',
+code: `{
+"key": "quickstart-corpus",
+"name": "Quickstart Corpus",
+"description": "My first corpus",
+"enabled": true,
+"created_at": "2025-01-15T10:30:00Z"
 }`
-    }
-  ]}
-  title="Response"
-  layout="stacked"
+}
+]}
+title="Response"
+layout="stacked"
 />
 
 You now have a corpus ready to store documents.
@@ -99,10 +100,10 @@ You now have a corpus ready to store documents.
 Upload your first document. We'll create a simple structured document:
 
 <CodePanel
-  snippets={[
-    {
-      language: 'bash',
-      code: `curl -X POST https://api.vectara.io/v2/corpora/quickstart-corpus/documents \\
+snippets={[
+{
+language: 'bash',
+code: `curl -X POST https://api.vectara.io/v2/corpora/quickstart-corpus/documents \\
   -H "x-api-key: $VECTARA_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -111,40 +112,41 @@ Upload your first document. We'll create a simple structured document:
     "title": "Vectara Overview",
     "sections": [
       {
-        "text": "Vectara is an Agent Operating System for trusted enterprise AI. It provides RAG capabilities with built-in governance, grounded responses, and factual consistency enforcement."
+        "text": "Vectara is the Enterprise Agent Platform, with built-in multi-modal retrieval, orchestration, and
+always-on governance, deployable on-prem (air-gapped), in your VPC, or as SaaS."
       },
       {
         "text": "Vectara agents deliver answers with source citations, audit trails, and real-time policy enforcement. This enables teams to ship faster with lower risk."
       }
     ]
   }'`
-    }
-  ]}
-  title="Upload Document"
-  annotations={{
+}
+]}
+title="Upload Document"
+annotations={{
     bash: [
       { line: 5, text: 'Structured document format with sections' },
       { line: 6, text: 'Unique document identifier' },
       { line: 9, text: 'Document content to be indexed and searched' }
     ]
   }}
-  layout="stacked"
+layout="stacked"
 />
 
 **Expected response:**
 
 <CodePanel
-  snippets={[
-    {
-      language: 'json',
-      code: `{
-  "id": "doc-1",
-  "status": "indexed"
+snippets={[
+{
+language: 'json',
+code: `{
+"id": "doc-1",
+"status": "indexed"
 }`
-    }
-  ]}
-  title="Response"
-  layout="stacked"
+}
+]}
+title="Response"
+layout="stacked"
 />
 
 Your document is now indexed and searchable.
@@ -166,10 +168,10 @@ curl -X POST https://api.vectara.io/v2/corpora/quickstart-corpus/upload \
 Now query your document and get an AI-generated answer with citations:
 
 <CodePanel
-  snippets={[
-    {
-      language: 'bash',
-      code: `curl -X POST https://api.vectara.io/v2/query \\
+snippets={[
+{
+language: 'bash',
+code: `curl -X POST https://api.vectara.io/v2/query \\
   -H "x-api-key: $VECTARA_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -187,30 +189,30 @@ Now query your document and get an AI-generated answer with citations:
       "max_used_search_results": 5
     }
   }'`
-    }
-  ]}
-  title="Query with RAG"
-  annotations={{
+}
+]}
+title="Query with RAG"
+annotations={{
     bash: [
       { line: 5, text: 'Your natural language question' },
       { line: 9, text: 'Which corpus to search' },
       { line: 15, text: 'Mockingbird 2.0 generates the answer' }
     ]
   }}
-  layout="stacked"
+layout="stacked"
 />
 
 **Response:**
 
 <CodePanel
-  snippets={[
-    {
-      language: 'json',
-      code: `{
-  "summary": "Vectara is an Agent Operating System for trusted enterprise AI [1]. It provides RAG capabilities with built-in governance, grounded responses, and factual consistency enforcement [1]. Vectara agents deliver answers with source citations, audit trails, and real-time policy enforcement [2].",
+snippets={[
+{
+language: 'json',
+code: `{
+  "summary": "Vectara is the Enterprise Agent Platform [1]. It provides RAG capabilities with built-in governance, grounded responses, and factual consistency enforcement [1]. Vectara agents deliver answers with source citations, audit trails, and real-time policy enforcement [2].",
   "search_results": [
     {
-      "text": "Vectara is an Agent Operating System for trusted enterprise AI...",
+      "text": "Vectara is the Enterprise Agent Platform...",
       "score": 0.89,
       "document_id": "doc-1",
       "document_metadata": {
@@ -225,20 +227,21 @@ Now query your document and get an AI-generated answer with citations:
   ],
   "factual_consistency_score": 0.95
 }`
-    }
-  ]}
-  title="Response with Citations"
-  annotations={{
+}
+]}
+title="Response with Citations"
+annotations={{
     json: [
       { line: 2, text: 'AI-generated answer with citation numbers [1], [2]' },
       { line: 3, text: 'Source text snippets matched to citations' },
       { line: 18, text: 'Score indicating answer accuracy (0.0-1.0)' }
     ]
   }}
-  layout="stacked"
+layout="stacked"
 />
 
 Notice:
+
 - **Citations** (`[1]`, `[2]`) link answers to source documents
 - **Search results** show the matched text snippets
 - **Factual consistency score** (0.95) indicates high accuracy
@@ -248,12 +251,13 @@ Notice:
 ## What you just built
 
 In less than 5 minutes, you:
+
 1. Created a corpus to store documents
 2. Indexed a document with searchable text
 3. Queried your data with natural language
 4. Got an AI-generated answer with citations
 
-This is the foundation of every Vectara application, from simple Q&A to 
+This is the foundation of every Vectara application, from simple Q&A to
 complex AI agents.
 
 ## Next steps
@@ -263,10 +267,11 @@ complex AI agents.
 **Upload a PDF, Word doc, or text file:**
 
 <CodePanel snippets={[{language: "bash", code: `curl -X POST https://api.vectara.io/v2/corpora/quickstart-corpus/upload \\
-  -H "x-api-key: $VECTARA_API_KEY" \\
-  -F "file=@my-document.pdf"`}]} title="Upload a file" layout="stacked" />
+-H "x-api-key: $VECTARA_API_KEY" \\
+-F "file=@my-document.pdf"`}]} title="Upload a file" layout="stacked" />
 
 **Learn more:**
+
 - [Supported file formats](/docs/build/data-ingestion#supported-file-formats)
 - [Working with tables in PDFs](/docs/build/working-with-tables)
 - [Add metadata for filtering](/docs/build/prepare-data/metadata-filters)
@@ -291,6 +296,7 @@ Transform your RAG application into an intelligent agent:
   }'`}]} title="Create an agent" layout="stacked" />
 
 **Learn more:**
+
 - [Agent quickstart](/docs/agents/agents-quickstart)
 - [Agent instructions](/docs/rest-api/instructions)
 - [Agent tools](/docs/rest-api/tools)
@@ -321,6 +327,7 @@ Transform your RAG application into an intelligent agent:
   }'`}]} title="Query with reranker" layout="stacked" />
 
 **Learn more:**
+
 - [Reranking strategies](/docs/search-and-retrieval/reranking)
 - [Hybrid search](/docs/search-and-retrieval#hybrid-search)
 - [Custom prompts](/docs/prompts/vectara-prompt-engine)
@@ -332,55 +339,59 @@ Copy this complete script to test everything at once:
 <CodePanel snippets={[{language: "bash", code: `#!/bin/bash
 
 # Set your API key
+
 export VECTARA_API_KEY="your_api_key_here"
 
 # Step 1: Create corpus
+
 echo "Creating corpus..."
 curl -X POST https://api.vectara.io/v2/corpora \\
-  -H "x-api-key: $VECTARA_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "key": "quickstart-corpus",
-    "name": "Quickstart Corpus",
-    "description": "My first corpus"
-  }'
+-H "x-api-key: $VECTARA_API_KEY" \\
+-H "Content-Type: application/json" \\
+-d '{
+"key": "quickstart-corpus",
+"name": "Quickstart Corpus",
+"description": "My first corpus"
+}'
 
 echo -e "\\n"
 
 # Step 2: Upload document
+
 echo "Uploading document..."
 curl -X POST https://api.vectara.io/v2/corpora/quickstart-corpus/documents \\
-  -H "x-api-key: $VECTARA_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "type": "structured",
-    "id": "doc-1",
-    "title": "Vectara Overview",
-    "sections": [
-      {
-        "text": "Vectara is an Agent Operating System for trusted enterprise AI. It provides \nRAG capabilities with built-in governance, grounded responses, and factual consistency enforcement."
-      }
-    ]
-  }'
+-H "x-api-key: $VECTARA_API_KEY" \\
+-H "Content-Type: application/json" \\
+-d '{
+"type": "structured",
+"id": "doc-1",
+"title": "Vectara Overview",
+"sections": [
+{
+"text": "Vectara is the Enterprise Agent Platform, with built-in multi-modal retrieval, orchestration, and
+always-on governance, deployable on-prem (air-gapped), in your VPC, or as SaaS."
+}
+]
+}'
 
 echo -e "\\n"
 
 # Step 3: Query
+
 echo "Querying data..."
 curl -X POST https://api.vectara.io/v2/query \\
-  -H "x-api-key: $VECTARA_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "query": "What is Vectara?",
-    "search": {
-      "corpora": [{"corpus_key": "quickstart-corpus"}],
-      "limit": 5
-    },
-    "generation": {
-      "generation_preset_name": "mockingbird-2.0",
-      "max_used_search_results": 5
-    }
-  }'`}]} title="Complete quickstart script" layout="stacked" />
+-H "x-api-key: $VECTARA_API_KEY" \\
+-H "Content-Type: application/json" \\
+-d '{
+"query": "What is Vectara?",
+"search": {
+"corpora": [{"corpus_key": "quickstart-corpus"}],
+"limit": 5
+},
+"generation": {
+"generation_preset_name": "mockingbird-2.0",
+"max_used_search_results": 5
+}
+}'`}]} title="Complete quickstart script" layout="stacked" />
 
 Save as `vectara-quickstart.sh`, make it executable with `chmod +x vectara-quickstart.sh`, and run it!
-
