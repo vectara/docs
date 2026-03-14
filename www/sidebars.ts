@@ -399,6 +399,22 @@ const sidebars: SidebarsConfig = {
             },
             {
               type: "category",
+              label: "Schedules",
+              link: {
+                type: "doc",
+                id: "rest-api/agent-schedules",
+              },
+              items: [
+                {
+                  type: "doc",
+                  id: "rest-api/list-agent-schedules",
+                  label: "List agent schedules",
+                  className: "api-method get",
+                },
+              ],
+            },
+            {
+              type: "category",
               label: "Instructions",
               link: {
                 type: "doc",
