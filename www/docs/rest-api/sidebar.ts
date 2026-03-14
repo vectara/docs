@@ -110,6 +110,24 @@ const sidebar: SidebarsConfig = {
         },
         {
           type: "doc",
+          id: "rest-api/delete-agent-event",
+          label: "Delete event",
+          className: "api-method delete",
+        },
+        {
+          type: "doc",
+          id: "rest-api/hide-agent-event",
+          label: "Hide event",
+          className: "api-method post",
+        },
+        {
+          type: "doc",
+          id: "rest-api/unhide-agent-event",
+          label: "Unhide event",
+          className: "api-method post",
+        },
+        {
+          type: "doc",
           id: "rest-api/list-session-artifacts",
           label: "List session artifacts",
           className: "api-method get",
@@ -118,6 +136,52 @@ const sidebar: SidebarsConfig = {
           type: "doc",
           id: "rest-api/get-session-artifact",
           label: "Get session artifact",
+          className: "api-method get",
+        },
+      ],
+    },
+    {
+      type: "category",
+      label: "Agent Schedules",
+      link: {
+        type: "doc",
+        id: "rest-api/agent-schedules",
+      },
+      items: [
+        {
+          type: "doc",
+          id: "rest-api/create-agent-schedule",
+          label: "Create agent schedule",
+          className: "api-method post",
+        },
+        {
+          type: "doc",
+          id: "rest-api/list-agent-schedules",
+          label: "List agent schedules",
+          className: "api-method get",
+        },
+        {
+          type: "doc",
+          id: "rest-api/get-agent-schedule",
+          label: "Get agent schedule",
+          className: "api-method get",
+        },
+        {
+          type: "doc",
+          id: "rest-api/update-agent-schedule",
+          label: "Update agent schedule",
+          className: "api-method patch",
+        },
+        {
+          type: "doc",
+          id: "rest-api/delete-agent-schedule",
+          label: "Delete agent schedule",
+          className: "api-method delete",
+        },
+        {
+          type: "doc",
+          id: "rest-api/list-agent-schedule-executions",
+          label: "List agent schedule executions",
           className: "api-method get",
         },
       ],
