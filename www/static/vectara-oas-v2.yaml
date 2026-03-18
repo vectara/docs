@@ -3642,6 +3642,7 @@ paths:
         cursor: $request.page_key
         next_cursor: $response.metadata.page_key
         results: $response.queries
+  /v2/customers/configuration: {}
   /v2/llms:
     post:
       tags:
@@ -8127,6 +8128,11 @@ paths:
         cursor: $request.page_key
         next_cursor: $response.metadata.page_key
         results: $response.executions
+  /v2/pipelines: {}
+  /v2/pipelines/{pipeline_key}: {}
+  /v2/pipelines/{pipeline_key}/trigger: {}
+  /v2/pipelines/{pipeline_key}/runs: {}
+  /v2/pipelines/{pipeline_key}/runs/{run_id}: {}
 components:
   parameters:
     RequestTimeout:
@@ -10975,6 +10981,279 @@ components:
               description: A query parameter required when requesting the next page
                 of results.
               type: string
+    Chat:
+      description: A chat conversation with associated metadata and settings.
+      type: object
+      properties:
+        id:
+          description: ID of the chat.
+          type: string
+          pattern: cht_.+$
+          example: cht_123456789
+        first_query:
+          description: The first query of the chat.
+          type: string
+          example: What are the arbitration terms in the Delaware employment contract?
+        first_answer:
+          description: The first answer of the chat.
+          type: string
+          example: Clause 9.2 mandates binding arbitration through AAA with venue
+            in Delaware and a 30-day opt-out. California law governs the agreement.
+        enabled:
+          description: Indicates whether this chat is enabled and can have further
+            turns.
+          type: boolean
+          example: true
+        created_at:
+          description: Specifies when this chat was created.
+          type: string
+          format: date-time
+    ListChatsResponse:
+      description: Response containing a list of chat conversations.
+      type: object
+      properties:
+        chats:
+          description: List of chats.
+          type: array
+          items:
+            $ref: '#/components/schemas/Chat'
+        metadata:
+          $ref: '#/components/schemas/ListMetadata'
+    ChatParameters:
+      type: object
+      description: Parameters to control chat behavior.
+      properties:
+        store:
+          description: Indicates whether to store chat messages and response messages.
+          type: boolean
+          default: true
+    ChatRequest:
+      description: Request to start or continue a chat conversation with a large language
+        model.
+      type: object
+      properties:
+        query:
+          description: The chat message or question.
+          type: string
+          maxLength: 5000
+          example: What are the carbon reduction efforts by EU banks in 2023?
+        search:
+          $ref: '#/components/schemas/SearchCorporaParameters'
+        generation:
+          $ref: '#/components/schemas/GenerationParameters'
+        chat:
+          $ref: '#/components/schemas/ChatParameters'
+        save_history:
+          description: Indicates whether to save the chat in both the chat and query
+            history. This overrides `chat.store`.
+          type: boolean
+          default: true
+        intelligent_query_rewriting:
+          description: '[Tech Preview] Indicates whether to enable intelligent query
+            rewriting. When enabled, the platform will attempt to extract metadata
+            filter and rewrite the query to improve search results. Read [here](https://docs.vectara.com/docs/search-and-retrieval/intelligent-query-rewriting)
+            for more details.'
+          type: boolean
+          default: false
+        stream_response:
+          description: Indicates whether the response should be streamed or not.
+          type: boolean
+          default: false
+      required:
+      - query
+      - search
+    ChatFullResponse:
+      description: Full response to a chat question when the result is not streamed.
+      type: object
+      properties:
+        chat_id:
+          description: If the chat response was stored, the ID of the chat.
+          type: string
+          example: cht_123456789
+        turn_id:
+          description: If the chat response was stored, the ID of the turn.
+          type: string
+          example: trn_987654321
+        answer:
+          description: The message from the chat model for the chat message.
+          type: string
+          example: EU banks in 2023 have increased carbon reduction initiatives by
+            20%, driven by new EU regulations mandating annual emissions reporting.
+        response_language:
+          description: The language that the answer is expected to be.
+          $ref: '#/components/schemas/Language'
+          example: eng
+        search_results:
+          description: The ranked search results that the chat model used.
+          type: array
+          items:
+            $ref: '#/components/schemas/IndividualSearchResult'
+        factual_consistency_score:
+          description: Indicates the probability that the summary is factually consistent
+            with the results. The system excludes this property if it encounters excessively
+            large outputs or search results.
+          type: number
+          format: float
+        rendered_prompt:
+          description: The rendered prompt sent to the LLM. Useful when creating customer
+            `prompt_template` templates.
+          type: string
+          example: '[{"role": "system", "content": "You are an ESG analyst."}, {"role":
+            "user", "content": "What are the carbon reduction initiatives by EU banks
+            in 2023?"}, {"role": "assistant", "content": "${vectaraQueryResults[0].getText()}"}]'
+        warnings:
+          description: Non-fatal warnings that occurred during request processing
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryWarning'
+        rephrased_query:
+          description: View the actual query made to backend that was rephrased by
+            the LLM from the input query.
+          type: string
+          example: Carbon reduction efforts by EU banks in 2023?
+        rewritten_queries:
+          description: The rewritten queries for the corpora that were searched. Only
+            populated when intelligent_query_rewriting is enabled.
+          type: array
+          items:
+            $ref: '#/components/schemas/RewrittenQuery'
+          example:
+          - corpus_key: fin_docs
+            filter_extraction:
+              query: ESG compliance trends in EU
+              metadata_filter: doc.industry = 'banking' AND doc.year = 2023
+          - corpus_key: legal_docs
+            filter_extraction:
+              query: ESG regulations for EU banks 2023
+              metadata_filter: doc.jurisdiction = 'EU' AND doc.year = 2023
+    ChatInfoResponse:
+      description: Information about the chat.
+      type: object
+      properties:
+        type:
+          description: This will be `chat_info` when the stream event contains information
+            about how the chat is stored.
+          type: string
+          default: chat_info
+        chat_id:
+          description: ID of the chat.
+          type: string
+          pattern: cht_.+$
+          example: cht_123456789
+        turn_id:
+          description: ID of the turn.
+          type: string
+          pattern: trn_.+$
+          example: trn_987654321
+      x-vectaraParents:
+      - ChatStreamedResponse
+    ChatStreamedResponse:
+      description: An individual event when the response is streamed.
+      type: object
+      discriminator:
+        propertyName: type
+        mapping:
+          search_results: '#/components/schemas/StreamSearchResponse'
+          chat_info: '#/components/schemas/ChatInfoResponse'
+          generation_chunk: '#/components/schemas/StreamGenerationChunk'
+          generation_end: '#/components/schemas/StreamGenerationEnd'
+          generation_info: '#/components/schemas/GenerationInfo'
+          factual_consistency_score: '#/components/schemas/FactualConsistencyScore'
+          end: '#/components/schemas/StreamResponseEnd'
+          error: '#/components/schemas/StreamError'
+      oneOf:
+      - $ref: '#/components/schemas/StreamSearchResponse'
+      - $ref: '#/components/schemas/ChatInfoResponse'
+      - $ref: '#/components/schemas/StreamGenerationChunk'
+      - $ref: '#/components/schemas/StreamGenerationEnd'
+      - $ref: '#/components/schemas/GenerationInfo'
+      - $ref: '#/components/schemas/FactualConsistencyScore'
+      - $ref: '#/components/schemas/StreamResponseEnd'
+      - $ref: '#/components/schemas/StreamError'
+    Turn:
+      description: A single message exchange in a chat conversation, representing
+        one user input and the corresponding response.
+      type: object
+      properties:
+        id:
+          description: The ID of the turn.
+          type: string
+          pattern: trn_.+$
+          example: trn_987654321
+        chat_id:
+          description: The ID of the chat the turn resides in.
+          type: string
+          pattern: cht_.+$
+          example: cht_123456789
+        query:
+          description: The query made to produce this turn.
+          type: string
+          maxLength: 5000
+          example: How do you turn this widget?
+        answer:
+          description: The response to the query.
+          type: string
+          example: The widget turns counter clockwise.
+        enabled:
+          description: Indicates whether the turn is enabled and shown in future turns
+            of the chat.
+          type: boolean
+          example: true
+        created_at:
+          description: Specifies when the turn was created.
+          type: string
+          format: date-time
+    ListChatTurnsResponse:
+      description: Response containing a list of turns (message exchanges) within
+        a chat conversation.
+      type: object
+      properties:
+        turns:
+          description: List of turns.
+          type: array
+          items:
+            $ref: '#/components/schemas/Turn'
+    UpdateTurnRequest:
+      description: Request to update a specific turn (message exchange) within a chat
+        conversation.
+      type: object
+      properties:
+        enabled:
+          description: Indicates whether to disable a turn. It will disable this turn
+            and all subsequent turns. Enabling a turn is not implemented.
+          type: boolean
+          example: false
+    CustomerConfiguration:
+      type: object
+      description: Customer configuration.
+      required:
+      - customer_id
+      - operational_status
+      properties:
+        customer_id:
+          description: The unique identifier of the customer.
+          type: integer
+          format: int64
+          example: 1234567890
+        operational_status:
+          description: The operational status of the customer account.
+          type: string
+          enum:
+          - ACTIVE
+          - MARKED_FOR_DELETION
+          - DELETED
+          - EXPIRED
+          example: ACTIVE
+    ListCustomerConfigurationsResponse:
+      type: object
+      description: Response containing a list of customer configurations.
+      required:
+      - configurations
+      properties:
+        configurations:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomerConfiguration'
     LLMCapabilities:
       description: Capabilities of a Large Language Model.
       type: object
@@ -13090,6 +13369,11 @@ components:
           description: Whether the tool is currently enabled and available for use.
           type: boolean
           default: true
+        experimental:
+          description: Whether this tool is experimental and may change or be removed
+            without notice.
+          type: boolean
+          default: false
         created_at:
           description: Timestamp when the tool was created.
           type: string
@@ -13288,7 +13572,7 @@ components:
 
         - Use type annotations for automatic input/output schema discovery
 
-        - Supported typing constructs: `List`, `Dict`, `Optional`, `Union`
+        - Supported typing constructs: `List`, `Dict`, `Optional`, `Union`, `Literal`
 
         - Import from `typing` module when using complex types
 
@@ -13663,7 +13947,13 @@ components:
             \ str, adjustment: Adjustment) -> dict:\n    return {\"client_id\": client_id,\
             \ \"adjustment\": adjustment}\n```\n\nTypedDict supports inheritance,\
             \ `Optional` fields, nested TypedDicts, and `total=False` to make all\
-            \ fields optional.\n"
+            \ fields optional.\n\n**Constraining parameters to specific values with\
+            \ Literal**: Use `Literal` to restrict a parameter to a fixed set of allowed\
+            \ values. This generates an `enum` constraint in the JSON schema, helping\
+            \ the agent choose valid options.\n\n```python\nfrom typing import Literal\n\
+            \ndef process(status: Literal[\"active\", \"inactive\", \"pending\"],\
+            \ priority: Literal[1, 2, 3]) -> dict:\n    return {\"status\": status,\
+            \ \"priority\": priority}\n```\n"
           type: string
           minLength: 1
           maxLength: 100000
@@ -14060,6 +14350,937 @@ components:
       oneOf:
       - $ref: '#/components/schemas/TestToolSuccessResponse'
       - $ref: '#/components/schemas/TestToolErrorResponse'
+    ToolConfigurationId:
+      description: Unique identifier for a tool configuration.
+      type: string
+      pattern: ^tcf_.*
+      example: tcf_123e4567-e89b-12d3-a456-426614174000
+    ToolConfigurationName:
+      description: The human-readable name of a tool configuration.
+      type: string
+      minLength: 1
+      maxLength: 50
+      example: Customer Support Search Config
+    ToolConfigurationBase:
+      description: Base properties shared by all tool configuration types.
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/ToolConfigurationId'
+        name:
+          $ref: '#/components/schemas/ToolConfigurationName'
+        description:
+          description: A detailed description of what this tool configuration is for
+            and how it should be used.
+          type: string
+          example: Configuration for searching customer support documentation with
+            optimized parameters
+        description_template:
+          $ref: '#/components/schemas/ToolDescriptionTemplate'
+        version:
+          description: The version identifier for this tool configuration. This is
+            automatically incremented when the configuration is updated.
+          type: integer
+          minimum: 1
+          example: 1
+        enabled:
+          description: Whether the tool configuration is currently enabled and available
+            for use.
+          type: boolean
+          default: true
+        metadata:
+          description: Optional metadata associated with this tool configuration.
+          type: object
+          additionalProperties: true
+          example:
+            tags:
+            - production
+            - v2
+            owner: team-platform
+        created_at:
+          description: Timestamp when the tool configuration was created.
+          type: string
+          format: date-time
+        updated_at:
+          description: Timestamp when the tool configuration was last updated.
+          type: string
+          format: date-time
+      required:
+      - id
+      - version
+    DynamicVectaraToolConfiguration:
+      description: 'A configuration for built-in Vectara tools that have implementations
+        within the platform but do not have a dedicated configuration type schema.
+        Use the List Tools endpoint to discover available tools and obtain the `tool_id`
+        required when creating this configuration.
+
+        '
+      allOf:
+      - $ref: '#/components/schemas/ToolConfigurationBase'
+      - type: object
+        properties:
+          type:
+            description: This should always be `dynamic_vectara`.
+            type: string
+            default: dynamic_vectara
+            example: dynamic_vectara
+          argument_override:
+            description: "Optional hardcoded arguments for tool calls. The key specifies\
+              \ the location in the tool arguments to overide, and the value specifies\
+              \ what to override with. The LLM will not be able to change the parameters,\
+              \ nor know those values exist within the tool.\n\nThe values can also\
+              \ be dynamic references to context values using $ref with dot notation\
+              \ path syntax:\n- Static value: \"fixed_value\" or 123\n- Dynamic reference:\
+              \ `{\"$ref\": \"session.metadata.field_name\"}`\n\nReferences are resolved\
+              \ at runtime from context:\n- session.metadata.* - Access session metadata\
+              \ fields\n- agent.metadata.* - Access agent metadata fields\n\nExample:\n\
+              \  `{\"query\": {\"$ref\": \".session.metadata.query\"}}`\n\nIf you\
+              \ want to have a real value `\"$ref\"` use `\"$$ref\"`, that is you\
+              \ can escape the first $ by using $$."
+            type: object
+            additionalProperties: true
+            example:
+              custom_param: value
+              max_results: 10
+        required:
+        - type
+      x-vectaraParents:
+      - ToolConfiguration
+    McpToolConfiguration:
+      description: A reusable configuration for an MCP tool that stores predefined
+        argument overrides and settings.
+      allOf:
+      - $ref: '#/components/schemas/ToolConfigurationBase'
+      - type: object
+        properties:
+          type:
+            description: This should always be `mcp`.
+            type: string
+            default: mcp
+            example: mcp
+          argument_override:
+            description: "Optional hardcoded arguments for tool calls. The key specifies\
+              \ the location in the tool arguments to overide, and the value specifies\
+              \ what to override with. The LLM will not be able to change the parameters,\
+              \ nor know those values exist within the tool.\n\nThe values can also\
+              \ be dynamic references to context values using $ref with dot notation\
+              \ path syntax:\n- Static value: \"fixed_value\" or 123\n- Dynamic reference:\
+              \ `{\"$ref\": \"session.metadata.field_name\"}`\n\nReferences are resolved\
+              \ at runtime from context:\n- session.metadata.* - Access session metadata\
+              \ fields\n- agent.metadata.* - Access agent metadata fields\n\nExample:\n\
+              \  `{\"query\": {\"$ref\": \".session.metadata.query\"}}`\n\nIf you\
+              \ want to have a real value `\"$ref\"` use `\"$$ref\"`, that is you\
+              \ can escape the first $ by using $$."
+            type: object
+            additionalProperties: true
+            example:
+              custom_param: value
+              max_results: 10
+        required:
+        - type
+      x-vectaraParents:
+      - ToolConfiguration
+    CorporaSearchToolParameters:
+      description: LLM-exposed parameters for the corpora search tool that can be
+        filled in during execution.
+      type: object
+      properties:
+        query:
+          description: The search query string, which is the question the user is
+            asking. If not provided, will be filled in by the agent.
+          type: string
+          maxLength: 5000
+          example: Am I allowed to bring pets to work?
+      additionalProperties: false
+    EagerReference:
+      title: EagerReference
+      description: A reference to a value resolved from the session context at the
+        start of each turn. Resolution occurs when a new message is submitted to the
+        agent session, before any LLM processing begins. The resolved value remains
+        constant throughout the turn and is not re-evaluated during the agent's response
+        or subsequent tool calls within the same turn.
+      type: object
+      x-vectaraParents:
+      - AgentKeyedSearchCorpusCorpusKey
+      - AgentKeyedSearchCorpusMetadataFilter
+      properties:
+        $ref:
+          type: string
+          description: A dot-notation path to the value in the session context.
+          example: session.metadata.filters.user_access
+      required:
+      - $ref
+      additionalProperties: false
+    AgentKeyedSearchCorpus:
+      title: AgentKeyedSearchCorpus
+      description: Agent-specific keyed search corpus that supports eager references
+        for corpus_key and metadata_filter.
+      type: object
+      properties:
+        corpus_key:
+          description: 'The corpus to search. Can be either a static string (e.g.
+            "my-corpus") or an EagerReference object (e.g. {"$ref": "session.metadata.corpus"}).
+            When an EagerReference is provided, the $ref path is resolved from the
+            session context at the start of each turn, before LLM processing begins.'
+          oneOf:
+          - type: string
+          - $ref: '#/components/schemas/EagerReference'
+        custom_dimensions:
+          allOf:
+          - $ref: '#/components/schemas/CustomDimensions'
+          nullable: true
+          default: null
+        metadata_filter:
+          description: 'The filter to narrow search results. Can be either a static
+            string (e.g. "doc.department = ''engineering''") or an EagerReference
+            object (e.g. {"$ref": "session.metadata.filters.user"}). When an EagerReference
+            is provided, the $ref path is resolved from the session context at the
+            start of each turn, before LLM processing begins.'
+          oneOf:
+          - type: string
+          - $ref: '#/components/schemas/EagerReference'
+        lexical_interpolation:
+          description: How much to weigh lexical scores compared to the embedding
+            score. 0 means lexical search is not used at all, and 1 means only lexical
+            search is used.
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          default: 0.025
+        semantics:
+          allOf:
+          - $ref: '#/components/schemas/SearchSemantics'
+          default: default
+        query:
+          description: Query override for this specific corpus.
+          type: string
+          maxLength: 5000
+      required:
+      - corpus_key
+    AgentSearchCorporaParameters:
+      title: AgentSearchCorporaParameters
+      description: Agent-specific search parameters that support eager references.
+      type: object
+      properties:
+        corpora:
+          description: The corpora to search, with support for eager references.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentKeyedSearchCorpus'
+          minItems: 1
+        offset:
+          description: Number of results to skip for pagination.
+          type: integer
+          format: int32
+          minimum: 0
+          default: 0
+        limit:
+          description: Maximum number of results to return.
+          type: integer
+          format: int32
+          minimum: 1
+          default: 10
+        context_configuration:
+          allOf:
+          - $ref: '#/components/schemas/ContextConfiguration'
+          nullable: true
+          default: null
+        reranker:
+          $ref: '#/components/schemas/SearchReranker'
+    AgentCorporaSearchQueryConfiguration:
+      title: AgentCorporaSearchQueryConfiguration
+      description: Agent-specific query configuration that supports eager references.
+        Use this in agent tool configurations when turn-start resolution is needed.
+      type: object
+      properties:
+        search:
+          $ref: '#/components/schemas/AgentSearchCorporaParameters'
+        generation:
+          allOf:
+          - $ref: '#/components/schemas/GenerationParameters'
+          default:
+            enabled: false
+        save_history:
+          description: Whether to save the query to history.
+          type: boolean
+          default: false
+      required:
+      - search
+    CorporaSearchToolConfiguration:
+      description: A reusable configuration for a corpora search tool that stores
+        predefined search parameters and overrides.
+      allOf:
+      - $ref: '#/components/schemas/ToolConfigurationBase'
+      - type: object
+        properties:
+          type:
+            description: This should always be `corpora_search`.
+            type: string
+            default: corpora_search
+            example: corpora_search
+          argument_override:
+            description: Optional hardcoded arguments for tool calls. When specified,
+              these values will be used instead of allowing the LLM to fill in those
+              parameters.
+            $ref: '#/components/schemas/CorporaSearchToolParameters'
+          query_configuration:
+            description: User-configurable settings for the search that are not exposed
+              to the LLM. Supports dynamic references using $ref syntax.
+            $ref: '#/components/schemas/AgentCorporaSearchQueryConfiguration'
+        required:
+        - type
+        - query_configuration
+      x-vectaraParents:
+      - ToolConfiguration
+    WebSearchToolParameters:
+      description: Configurable parameters for the web search tool. If not provided,
+        will be filled in by the agent.
+      type: object
+      properties:
+        query:
+          description: The search query to execute.
+          type: string
+          example: latest AI developments 2024
+        limit:
+          description: Maximum number of results to return.
+          type: integer
+          minimum: 1
+          maximum: 20
+          example: 10
+        provider:
+          description: Search provider to use.
+          type: string
+          enum:
+          - tavily
+          example: tavily
+        include_domains:
+          description: List of domains to specifically include in search results.
+            When specified, results will ONLY come from these domains. Supports exact
+            domains (e.g., "github.com"), subdomains (e.g., "docs.github.com"), and
+            wildcard patterns (e.g., "*.github.com"). Subpaths are not supported.
+          type: array
+          items:
+            type: string
+          maxItems: 50
+          example:
+          - github.com
+          - docs.github.com
+          - '*.stackoverflow.com'
+        exclude_domains:
+          description: List of domains to specifically exclude from search results.
+            Supports exact domains (e.g., "spam.com"), subdomains (e.g., "bad.spam.com"),
+            and wildcard patterns (e.g., "*.spam.com"). Subpaths are not supported.
+          type: array
+          items:
+            type: string
+          maxItems: 50
+          example:
+          - spam.com
+          - unreliable-source.com
+      additionalProperties: false
+    WebSearchToolConfiguration:
+      description: A reusable configuration for a web search tool that stores predefined
+        search parameters and settings.
+      allOf:
+      - $ref: '#/components/schemas/ToolConfigurationBase'
+      - type: object
+        properties:
+          type:
+            description: This should always be `web_search`.
+            type: string
+            default: web_search
+            example: web_search
+          argument_override:
+            description: Optional hardcoded arguments for tool calls. When specified,
+              these values will be used instead of allowing the LLM to fill in those
+              parameters.
+            $ref: '#/components/schemas/WebSearchToolParameters'
+        required:
+        - type
+      x-vectaraParents:
+      - ToolConfiguration
+    LambdaToolConfiguration:
+      description: A reusable configuration for a Lambda tool that executes user-defined
+        functions in a sandboxed environment.
+      allOf:
+      - $ref: '#/components/schemas/ToolConfigurationBase'
+      - type: object
+        properties:
+          type:
+            description: This should always be `lambda`.
+            type: string
+            default: lambda
+            example: lambda
+          argument_override:
+            description: "Optional hardcoded arguments for tool calls. The key specifies\
+              \ the location in the tool arguments to overide, and the value specifies\
+              \ what to override with. The LLM will not be able to change the parameters,\
+              \ nor know those values exist within the tool.\n\nThe values can also\
+              \ be dynamic references to context values using $ref with dot notation\
+              \ path syntax:\n- Static value: \"fixed_value\" or 123\n- Dynamic reference:\
+              \ `{\"$ref\": \"session.metadata.field_name\"}`\n\nReferences are resolved\
+              \ at runtime from context:\n- session.metadata.* - Access session metadata\
+              \ fields\n- agent.metadata.* - Access agent metadata fields\n\nExample:\n\
+              \  `{\"query\": {\"$ref\": \".session.metadata.query\"}}`\n\nIf you\
+              \ want to have a real value `\"$ref\"` use `\"$$ref\"`, that is you\
+              \ can escape the first $ by using $$."
+            type: object
+            additionalProperties: true
+            example:
+              connection_string: postgresql://prod-db:5432/analytics
+              max_retries: 3
+        required:
+        - type
+      x-vectaraParents:
+      - ToolConfiguration
+    StructuredIndexingToolParameters:
+      description: LLM-exposed parameters for the structured indexing tool that indexes
+        documents into the Vectara platform and can be filled in during execution.
+      type: object
+      properties:
+        corpus_key:
+          description: The key identifying the target corpus for document indexing.
+            If not provided, will be filled in by the agent.
+          type: string
+          example: my-knowledge-base
+        document_id:
+          description: The unique identifier for the document within the corpus, preferably
+            human readable IDs.
+          type: string
+          example: annual_report_2024
+        title:
+          description: The title of the document being indexed.
+          type: string
+          example: 2024 Annual ESG Report
+        description:
+          description: A brief description or summary of the document content.
+          type: string
+          example: Comprehensive environmental, social, and governance report
+        metadata:
+          description: The metadata key-value pairs to associate with the document.
+            If present, this gets merged with existing artifact metadata.
+          type: object
+          additionalProperties: true
+          example:
+            doc_type: annual_report
+            year: 2024
+            department: sustainability
+        document:
+          description: The structured document to index with full hierarchical content.
+          type: object
+          additionalProperties: true
+          example:
+            id: annual_report_2024
+            type: structured
+            title: 2024 Annual ESG Report
+      additionalProperties: false
+    StructuredIndexingToolConfiguration:
+      description: A reusable configuration for a structured indexing tool that stores
+        predefined indexing parameters for indexing documents into the Vectara platform.
+      allOf:
+      - $ref: '#/components/schemas/ToolConfigurationBase'
+      - type: object
+        properties:
+          type:
+            description: This should always be `structured_indexing`.
+            type: string
+            default: structured_indexing
+            example: structured_indexing
+          argument_override:
+            description: Optional hardcoded arguments for tool calls. When specified,
+              these values will be used instead of allowing the LLM to fill in those
+              parameters.
+            $ref: '#/components/schemas/StructuredIndexingToolParameters'
+        required:
+        - type
+      x-vectaraParents:
+      - ToolConfiguration
+    SubAgentToolParameters:
+      description: Configurable parameters for the sub-agent tool. If not overridden,
+        they will be required by the LLM to fill in.
+      type: object
+      properties:
+        message:
+          description: The detailed task instructions for the sub-agent to perform
+            autonomously.
+          type: string
+          example: Review the code changes in pull request \#123 for security issues
+        session_tti_minutes:
+          description: Time to idle in minutes before the session expires.
+          type: integer
+          format: int64
+          minimum: 1
+          example: 60
+      additionalProperties: false
+    AgentKey:
+      description: A unique key that identifies an agent.
+      type: string
+      pattern: '[0-9a-zA-Z_-]+$'
+      minLength: 1
+      maxLength: 50
+      example: customer_support
+    SubAgentSessionMode:
+      description: 'Controls session behavior for sub-agent invocations:
+
+        - llm_controlled: LLM decides whether to create new or resume existing session
+
+        - persistent: Always reuse the same session (created on first invocation)
+
+        - ephemeral: Always create a new session on each invocation
+
+        '
+      type: string
+      enum:
+      - llm_controlled
+      - persistent
+      - ephemeral
+      default: ephemeral
+      example: ephemeral
+    SubAgentConfiguration:
+      description: User-configurable settings for the sub-agent tool. These parameters
+        are never exposed to the agent.
+      type: object
+      properties:
+        agent_key:
+          $ref: '#/components/schemas/AgentKey'
+        session_mode:
+          $ref: '#/components/schemas/SubAgentSessionMode'
+        session_metadata:
+          description: Optional metadata to associate with the sub-agent session.
+            Can contain any key-value pairs.
+          type: object
+          additionalProperties: true
+          default: {}
+          example:
+            source: parent_agent
+            task_type: code_review
+      required:
+      - agent_key
+    SubAgentToolConfiguration:
+      description: A reusable configuration for a sub-agent tool that invokes specialized
+        agents for complex tasks.
+      allOf:
+      - $ref: '#/components/schemas/ToolConfigurationBase'
+      - type: object
+        properties:
+          type:
+            description: This should always be `sub_agent`.
+            type: string
+            default: sub_agent
+            example: sub_agent
+          argument_override:
+            $ref: '#/components/schemas/SubAgentToolParameters'
+          sub_agent_configuration:
+            $ref: '#/components/schemas/SubAgentConfiguration'
+        required:
+        - type
+        - sub_agent_configuration
+      x-vectaraParents:
+      - ToolConfiguration
+    ArtifactReadToolParameters:
+      description: Configurable parameters for the artifact read tool. If not overridden,
+        they will be required by the LLM to fill in.
+      type: object
+      properties:
+        artifact_id:
+          description: The ID of the artifact to read.
+          type: string
+          example: art_abc123
+        encoding:
+          description: The encoding format for the content.
+          type: string
+          enum:
+          - raw
+          - base64
+          example: raw
+        start_line:
+          description: Optional starting line number (1-indexed).
+          type: integer
+          format: int32
+          example: 100
+        end_line:
+          description: Optional ending line number (1-indexed, inclusive).
+          type: integer
+          format: int32
+          example: 200
+      additionalProperties: false
+    ArtifactReadConfiguration:
+      description: User-configurable settings for the artifact read tool.
+      type: object
+      properties:
+        max_size_bytes:
+          description: Maximum file size in bytes for full reads without line ranges.
+            Defaults to 256KB.
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 10485760
+          default: 262144
+        max_lines:
+          description: Maximum number of lines for range-based reads. Defaults to
+            200.
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 10000
+          default: 200
+    ArtifactReadToolConfiguration:
+      description: A reusable configuration for an artifact read tool that reads artifacts
+        from the session workspace.
+      allOf:
+      - $ref: '#/components/schemas/ToolConfigurationBase'
+      - type: object
+        properties:
+          type:
+            description: This should always be `artifact_read`.
+            type: string
+            default: artifact_read
+            example: artifact_read
+          argument_override:
+            $ref: '#/components/schemas/ArtifactReadToolParameters'
+          tool_configuration:
+            $ref: '#/components/schemas/ArtifactReadConfiguration'
+        required:
+        - type
+      x-vectaraParents:
+      - ToolConfiguration
+    ArtifactGrepToolParameters:
+      description: Configurable parameters for the artifact grep tool. If not overridden,
+        they will be required by the LLM to fill in.
+      type: object
+      properties:
+        artifact_id:
+          description: The ID of the artifact to search.
+          type: string
+          example: art_abc123
+        pattern:
+          description: The pattern to search for (supports grep regex).
+          type: string
+          example: error|exception
+        grep_options:
+          description: Optional grep command options.
+          type: array
+          items:
+            type: string
+          example:
+          - -i
+          - -n
+      additionalProperties: false
+    ArtifactGrepToolConfiguration:
+      description: A reusable configuration for an artifact grep tool that searches
+        through artifact content.
+      allOf:
+      - $ref: '#/components/schemas/ToolConfigurationBase'
+      - type: object
+        properties:
+          type:
+            description: This should always be `artifact_grep`.
+            type: string
+            default: artifact_grep
+            example: artifact_grep
+          argument_override:
+            $ref: '#/components/schemas/ArtifactGrepToolParameters'
+        required:
+        - type
+      x-vectaraParents:
+      - ToolConfiguration
+    ImageReadToolParameters:
+      description: Configurable parameters for the image read tool. If not overridden,
+        they will be required by the LLM to fill in.
+      type: object
+      properties:
+        artifact_id:
+          description: The ID of the image artifact to view.
+          type: string
+          pattern: ^art_[a-z0-9_-]+$
+          example: art_photo_a3f2
+        detail:
+          description: Detail level for image processing.
+          type: string
+          enum:
+          - auto
+          - low
+          - high
+          default: auto
+          example: auto
+      additionalProperties: false
+    ImageReadToolConfiguration:
+      description: A reusable configuration for an image read tool that loads images
+        into the conversation context.
+      allOf:
+      - $ref: '#/components/schemas/ToolConfigurationBase'
+      - type: object
+        properties:
+          type:
+            description: This should always be `image_read`.
+            type: string
+            default: image_read
+            example: image_read
+          argument_override:
+            $ref: '#/components/schemas/ImageReadToolParameters'
+        required:
+        - type
+      x-vectaraParents:
+      - ToolConfiguration
+    DocumentConversionToolParameters:
+      description: Configurable parameters for the document conversion tool. If not
+        overridden, they will be required by the LLM to fill in.
+      type: object
+      properties:
+        artifact_id:
+          description: The ID of the artifact to convert.
+          type: string
+          example: art_abc123
+        output_format:
+          description: Output format for the converted document.
+          type: string
+          enum:
+          - markdown
+          - structured_document
+          example: markdown
+        description:
+          description: Optional description for the converted artifact.
+          type: string
+          example: PDF converted to markdown
+      additionalProperties: false
+    DocumentConversionToolConfiguration:
+      description: A reusable configuration for a document conversion tool that converts
+        document artifacts to various formats.
+      allOf:
+      - $ref: '#/components/schemas/ToolConfigurationBase'
+      - type: object
+        properties:
+          type:
+            description: This should always be `document_conversion`.
+            type: string
+            default: document_conversion
+            example: document_conversion
+          argument_override:
+            $ref: '#/components/schemas/DocumentConversionToolParameters'
+        required:
+        - type
+      x-vectaraParents:
+      - ToolConfiguration
+    GetDocumentTextParameters:
+      description: Configurable parameters for the get document text tool. If not
+        overridden, they will be required by the LLM to fill in.
+      type: object
+      properties:
+        document_id:
+          description: The document ID of the document to fetch text from.
+          type: string
+          minLength: 1
+          example: doc_12345
+        corpus_key:
+          description: The corpus key containing the document.
+          type: string
+          minLength: 1
+          example: my-corpus
+      additionalProperties: false
+    GetDocumentTextConfiguration:
+      description: User-configurable settings for the get document text tool. These
+        parameters are never exposed to the agent.
+      type: object
+      properties:
+        metadata:
+          type: object
+          description: Configuration for document metadata retrieval.
+          properties:
+            include:
+              type: boolean
+              description: Whether to include document metadata in the response. If
+                false, metadata artifact will not be created.
+              default: true
+            exclude_paths:
+              type: array
+              items:
+                type: string
+              description: List of JSONPath expressions for metadata fields to exclude
+                from the returned metadata.
+              default: []
+              example:
+              - $.internal.processedAt
+              - $.debug
+    GetDocumentTextToolConfiguration:
+      description: A reusable configuration for a get document text tool that fetches
+        document text content from a corpus.
+      allOf:
+      - $ref: '#/components/schemas/ToolConfigurationBase'
+      - type: object
+        properties:
+          type:
+            description: This should always be `get_document_text`.
+            type: string
+            default: get_document_text
+            example: get_document_text
+          argument_override:
+            $ref: '#/components/schemas/GetDocumentTextParameters'
+          tool_configuration:
+            $ref: '#/components/schemas/GetDocumentTextConfiguration'
+        required:
+        - type
+      x-vectaraParents:
+      - ToolConfiguration
+    ToolConfiguration:
+      description: A reusable tool configuration that stores user-defined argument
+        overrides and settings for a specific tool.
+      type: object
+      x-vectara-base-schema: '#/ToolConfigurationBase'
+      discriminator:
+        propertyName: type
+        mapping:
+          dynamic_vectara: '#/components/schemas/DynamicVectaraToolConfiguration'
+          mcp: '#/components/schemas/McpToolConfiguration'
+          corpora_search: '#/components/schemas/CorporaSearchToolConfiguration'
+          web_search: '#/components/schemas/WebSearchToolConfiguration'
+          lambda: '#/components/schemas/LambdaToolConfiguration'
+          structured_indexing: '#/components/schemas/StructuredIndexingToolConfiguration'
+          sub_agent: '#/components/schemas/SubAgentToolConfiguration'
+          artifact_read: '#/components/schemas/ArtifactReadToolConfiguration'
+          artifact_grep: '#/components/schemas/ArtifactGrepToolConfiguration'
+          image_read: '#/components/schemas/ImageReadToolConfiguration'
+          document_conversion: '#/components/schemas/DocumentConversionToolConfiguration'
+          get_document_text: '#/components/schemas/GetDocumentTextToolConfiguration'
+      oneOf:
+      - $ref: '#/components/schemas/DynamicVectaraToolConfiguration'
+      - $ref: '#/components/schemas/McpToolConfiguration'
+      - $ref: '#/components/schemas/CorporaSearchToolConfiguration'
+      - $ref: '#/components/schemas/WebSearchToolConfiguration'
+      - $ref: '#/components/schemas/LambdaToolConfiguration'
+      - $ref: '#/components/schemas/StructuredIndexingToolConfiguration'
+      - $ref: '#/components/schemas/SubAgentToolConfiguration'
+      - $ref: '#/components/schemas/ArtifactReadToolConfiguration'
+      - $ref: '#/components/schemas/ArtifactGrepToolConfiguration'
+      - $ref: '#/components/schemas/ImageReadToolConfiguration'
+      - $ref: '#/components/schemas/DocumentConversionToolConfiguration'
+      - $ref: '#/components/schemas/GetDocumentTextToolConfiguration'
+    WebGetToolParameters:
+      description: Configurable parameters for the web get tool. If not provided,
+        will be filled in by the agent.
+      type: object
+      properties:
+        url:
+          description: The URL to fetch content from.
+          oneOf:
+          - type: string
+          - $ref: '#/components/schemas/EagerReference'
+        method:
+          description: HTTP method to use.
+          type: string
+          enum:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - HEAD
+        headers:
+          description: HTTP headers to include in the request.
+          oneOf:
+          - type: object
+            additionalProperties:
+              type: string
+          - $ref: '#/components/schemas/EagerReference'
+        body:
+          description: Request body for POST/PUT requests.
+          oneOf:
+          - type: string
+          - $ref: '#/components/schemas/EagerReference'
+        follow_redirects:
+          description: Whether to follow HTTP redirects.
+          oneOf:
+          - type: boolean
+          - $ref: '#/components/schemas/EagerReference'
+        timeout_seconds:
+          description: Request timeout in seconds.
+          oneOf:
+          - type: integer
+          - $ref: '#/components/schemas/EagerReference'
+        head_lines:
+          description: Number of lines from start to include in response.
+          oneOf:
+          - type: integer
+          - $ref: '#/components/schemas/EagerReference'
+        tail_lines:
+          description: Number of lines from end to include in response.
+          oneOf:
+          - type: integer
+          - $ref: '#/components/schemas/EagerReference'
+        ssl_verify:
+          description: Whether to verify SSL certificates.
+          oneOf:
+          - type: boolean
+          - $ref: '#/components/schemas/EagerReference'
+        max_content_bytes:
+          description: Maximum response size in bytes before truncation.
+          oneOf:
+          - type: integer
+          - $ref: '#/components/schemas/EagerReference'
+      additionalProperties: false
+    CreateWebGetToolConfigurationRequest:
+      description: Request to create a reusable configuration for a web get tool with
+        predefined parameters that can be applied to agents.
+      allOf:
+      - type: object
+        properties:
+          type:
+            description: This should always be `web_get`.
+            type: string
+            default: web_get
+            example: web_get
+          argument_override:
+            description: Optional hardcoded arguments for the web get tool call. When
+              specified, these values will be used instead of allowing the LLM to
+              fill in those parameters.
+            $ref: '#/components/schemas/WebGetToolParameters'
+        required:
+        - type
+      x-vectaraParents:
+      - CreateToolConfigurationRequest
+    CreateArtifactReadToolConfigurationRequest:
+      description: Request to create a reusable configuration for an artifact read
+        tool with predefined parameters that can be applied to agents.
+      allOf:
+      - type: object
+        properties:
+          type:
+            description: This should always be `artifact_read`.
+            type: string
+            default: artifact_read
+            example: artifact_read
+          argument_override:
+            description: Optional hardcoded arguments for the artifact read tool.
+              When specified, these values will be used instead of allowing the LLM
+              to fill in those parameters.
+            $ref: '#/components/schemas/ArtifactReadToolParameters'
+          tool_configuration:
+            $ref: '#/components/schemas/ArtifactReadConfiguration'
+        required:
+        - type
+      x-vectaraParents:
+      - CreateToolConfigurationRequest
+    UpdateArtifactReadToolConfigurationRequest:
+      description: Request to update a reusable configuration for an artifact read
+        tool with predefined parameters.
+      allOf:
+      - type: object
+        properties:
+          type:
+            description: This should always be `artifact_read`.
+            type: string
+            default: artifact_read
+            example: artifact_read
+          argument_override:
+            description: Optional hardcoded arguments for the artifact read tool.
+              When specified, these values will be used instead of allowing the LLM
+              to fill in those parameters.
+            $ref: '#/components/schemas/ArtifactReadToolParameters'
+          tool_configuration:
+            $ref: '#/components/schemas/ArtifactReadConfiguration'
+        required:
+        - type
+      x-vectaraParents:
+      - UpdateToolConfigurationRequest
     InstructionId:
       description: The unique identifier for an instruction.
       type: string
@@ -14321,13 +15542,6 @@ components:
             Email Sender'
       required:
       - rendered_instruction
-    AgentKey:
-      description: A unique key that identifies an agent.
-      type: string
-      pattern: '[0-9a-zA-Z_-]+$'
-      minLength: 1
-      maxLength: 50
-      example: customer_support
     AgentName:
       description: The human-readable name of an agent.
       type: string
@@ -14413,133 +15627,6 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
-    CorporaSearchToolParameters:
-      description: LLM-exposed parameters for the corpora search tool that can be
-        filled in during execution.
-      type: object
-      properties:
-        query:
-          description: The search query string, which is the question the user is
-            asking. If not provided, will be filled in by the agent.
-          type: string
-          maxLength: 5000
-          example: Am I allowed to bring pets to work?
-      additionalProperties: false
-    EagerReference:
-      title: EagerReference
-      description: A reference to a value resolved from the session context at the
-        start of each turn. Resolution occurs when a new message is submitted to the
-        agent session, before any LLM processing begins. The resolved value remains
-        constant throughout the turn and is not re-evaluated during the agent's response
-        or subsequent tool calls within the same turn.
-      type: object
-      x-vectaraParents:
-      - AgentKeyedSearchCorpusCorpusKey
-      - AgentKeyedSearchCorpusMetadataFilter
-      properties:
-        $ref:
-          type: string
-          description: A dot-notation path to the value in the session context.
-          example: session.metadata.filters.user_access
-      required:
-      - $ref
-      additionalProperties: false
-    AgentKeyedSearchCorpus:
-      title: AgentKeyedSearchCorpus
-      description: Agent-specific keyed search corpus that supports eager references
-        for corpus_key and metadata_filter.
-      type: object
-      properties:
-        corpus_key:
-          description: 'The corpus to search. Can be either a static string (e.g.
-            "my-corpus") or an EagerReference object (e.g. {"$ref": "session.metadata.corpus"}).
-            When an EagerReference is provided, the $ref path is resolved from the
-            session context at the start of each turn, before LLM processing begins.'
-          oneOf:
-          - type: string
-          - $ref: '#/components/schemas/EagerReference'
-        custom_dimensions:
-          allOf:
-          - $ref: '#/components/schemas/CustomDimensions'
-          nullable: true
-          default: null
-        metadata_filter:
-          description: 'The filter to narrow search results. Can be either a static
-            string (e.g. "doc.department = ''engineering''") or an EagerReference
-            object (e.g. {"$ref": "session.metadata.filters.user"}). When an EagerReference
-            is provided, the $ref path is resolved from the session context at the
-            start of each turn, before LLM processing begins.'
-          oneOf:
-          - type: string
-          - $ref: '#/components/schemas/EagerReference'
-        lexical_interpolation:
-          description: How much to weigh lexical scores compared to the embedding
-            score. 0 means lexical search is not used at all, and 1 means only lexical
-            search is used.
-          type: number
-          format: float
-          minimum: 0
-          maximum: 1
-          default: 0.025
-        semantics:
-          allOf:
-          - $ref: '#/components/schemas/SearchSemantics'
-          default: default
-        query:
-          description: Query override for this specific corpus.
-          type: string
-          maxLength: 5000
-      required:
-      - corpus_key
-    AgentSearchCorporaParameters:
-      title: AgentSearchCorporaParameters
-      description: Agent-specific search parameters that support eager references.
-      type: object
-      properties:
-        corpora:
-          description: The corpora to search, with support for eager references.
-          type: array
-          items:
-            $ref: '#/components/schemas/AgentKeyedSearchCorpus'
-          minItems: 1
-        offset:
-          description: Number of results to skip for pagination.
-          type: integer
-          format: int32
-          minimum: 0
-          default: 0
-        limit:
-          description: Maximum number of results to return.
-          type: integer
-          format: int32
-          minimum: 1
-          default: 10
-        context_configuration:
-          allOf:
-          - $ref: '#/components/schemas/ContextConfiguration'
-          nullable: true
-          default: null
-        reranker:
-          $ref: '#/components/schemas/SearchReranker'
-    AgentCorporaSearchQueryConfiguration:
-      title: AgentCorporaSearchQueryConfiguration
-      description: Agent-specific query configuration that supports eager references.
-        Use this in agent tool configurations when turn-start resolution is needed.
-      type: object
-      properties:
-        search:
-          $ref: '#/components/schemas/AgentSearchCorporaParameters'
-        generation:
-          allOf:
-          - $ref: '#/components/schemas/GenerationParameters'
-          default:
-            enabled: false
-        save_history:
-          description: Whether to save the query to history.
-          type: boolean
-          default: false
-      required:
-      - search
     InlineCorporaSearchToolConfiguration:
       title: InlineCorporaSearchToolConfiguration
       description: A corpora search tool configuration defined inline in the agent.
@@ -14567,52 +15654,6 @@ components:
       - query_configuration
       x-vectaraParents:
       - AgentToolConfiguration
-    WebSearchToolParameters:
-      description: Configurable parameters for the web search tool. If not provided,
-        will be filled in by the agent.
-      type: object
-      properties:
-        query:
-          description: The search query to execute.
-          type: string
-          example: latest AI developments 2024
-        limit:
-          description: Maximum number of results to return.
-          type: integer
-          minimum: 1
-          maximum: 20
-          example: 10
-        provider:
-          description: Search provider to use.
-          type: string
-          enum:
-          - tavily
-          example: tavily
-        include_domains:
-          description: List of domains to specifically include in search results.
-            When specified, results will ONLY come from these domains. Supports exact
-            domains (e.g., "github.com"), subdomains (e.g., "docs.github.com"), and
-            wildcard patterns (e.g., "*.github.com"). Subpaths are not supported.
-          type: array
-          items:
-            type: string
-          maxItems: 50
-          example:
-          - github.com
-          - docs.github.com
-          - '*.stackoverflow.com'
-        exclude_domains:
-          description: List of domains to specifically exclude from search results.
-            Supports exact domains (e.g., "spam.com"), subdomains (e.g., "bad.spam.com"),
-            and wildcard patterns (e.g., "*.spam.com"). Subpaths are not supported.
-          type: array
-          items:
-            type: string
-          maxItems: 50
-          example:
-          - spam.com
-          - unreliable-source.com
-      additionalProperties: false
     InlineWebSearchToolConfiguration:
       title: InlineWebSearchToolConfiguration
       description: A web search tool configuration defined inline in the agent.
@@ -14634,68 +15675,6 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
-    WebGetToolParameters:
-      description: Configurable parameters for the web get tool. If not provided,
-        will be filled in by the agent.
-      type: object
-      properties:
-        url:
-          description: The URL to fetch content from.
-          oneOf:
-          - type: string
-          - $ref: '#/components/schemas/EagerReference'
-        method:
-          description: HTTP method to use.
-          type: string
-          enum:
-          - GET
-          - POST
-          - PUT
-          - DELETE
-          - HEAD
-        headers:
-          description: HTTP headers to include in the request.
-          oneOf:
-          - type: object
-            additionalProperties:
-              type: string
-          - $ref: '#/components/schemas/EagerReference'
-        body:
-          description: Request body for POST/PUT requests.
-          oneOf:
-          - type: string
-          - $ref: '#/components/schemas/EagerReference'
-        follow_redirects:
-          description: Whether to follow HTTP redirects.
-          oneOf:
-          - type: boolean
-          - $ref: '#/components/schemas/EagerReference'
-        timeout_seconds:
-          description: Request timeout in seconds.
-          oneOf:
-          - type: integer
-          - $ref: '#/components/schemas/EagerReference'
-        head_lines:
-          description: Number of lines from start to include in response.
-          oneOf:
-          - type: integer
-          - $ref: '#/components/schemas/EagerReference'
-        tail_lines:
-          description: Number of lines from end to include in response.
-          oneOf:
-          - type: integer
-          - $ref: '#/components/schemas/EagerReference'
-        ssl_verify:
-          description: Whether to verify SSL certificates.
-          oneOf:
-          - type: boolean
-          - $ref: '#/components/schemas/EagerReference'
-        max_content_bytes:
-          description: Maximum response size in bytes before truncation.
-          oneOf:
-          - type: integer
-          - $ref: '#/components/schemas/EagerReference'
-      additionalProperties: false
     InlineWebGetToolConfiguration:
       title: InlineWebGetToolConfiguration
       description: A web get tool configuration defined inline in the agent for fetching
@@ -14746,47 +15725,6 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
-    StructuredIndexingToolParameters:
-      description: LLM-exposed parameters for the structured indexing tool that indexes
-        documents into the Vectara platform and can be filled in during execution.
-      type: object
-      properties:
-        corpus_key:
-          description: The key identifying the target corpus for document indexing.
-            If not provided, will be filled in by the agent.
-          type: string
-          example: my-knowledge-base
-        document_id:
-          description: The unique identifier for the document within the corpus, preferably
-            human readable IDs.
-          type: string
-          example: annual_report_2024
-        title:
-          description: The title of the document being indexed.
-          type: string
-          example: 2024 Annual ESG Report
-        description:
-          description: A brief description or summary of the document content.
-          type: string
-          example: Comprehensive environmental, social, and governance report
-        metadata:
-          description: The metadata key-value pairs to associate with the document.
-            If present, this gets merged with existing artifact metadata.
-          type: object
-          additionalProperties: true
-          example:
-            doc_type: annual_report
-            year: 2024
-            department: sustainability
-        document:
-          description: The structured document to index with full hierarchical content.
-          type: object
-          additionalProperties: true
-          example:
-            id: annual_report_2024
-            type: structured
-            title: 2024 Annual ESG Report
-      additionalProperties: false
     InlineStructuredIndexingToolConfiguration:
       title: InlineStructuredIndexingToolConfiguration
       description: A structured indexing tool configuration defined inline in the
@@ -14809,60 +15747,6 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
-    SubAgentToolParameters:
-      description: Configurable parameters for the sub-agent tool. If not overridden,
-        they will be required by the LLM to fill in.
-      type: object
-      properties:
-        message:
-          description: The detailed task instructions for the sub-agent to perform
-            autonomously.
-          type: string
-          example: Review the code changes in pull request \#123 for security issues
-        session_tti_minutes:
-          description: Time to idle in minutes before the session expires.
-          type: integer
-          format: int64
-          minimum: 1
-          example: 60
-      additionalProperties: false
-    SubAgentSessionMode:
-      description: 'Controls session behavior for sub-agent invocations:
-
-        - llm_controlled: LLM decides whether to create new or resume existing session
-
-        - persistent: Always reuse the same session (created on first invocation)
-
-        - ephemeral: Always create a new session on each invocation
-
-        '
-      type: string
-      enum:
-      - llm_controlled
-      - persistent
-      - ephemeral
-      default: ephemeral
-      example: ephemeral
-    SubAgentConfiguration:
-      description: User-configurable settings for the sub-agent tool. These parameters
-        are never exposed to the agent.
-      type: object
-      properties:
-        agent_key:
-          $ref: '#/components/schemas/AgentKey'
-        session_mode:
-          $ref: '#/components/schemas/SubAgentSessionMode'
-        session_metadata:
-          description: Optional metadata to associate with the sub-agent session.
-            Can contain any key-value pairs.
-          type: object
-          additionalProperties: true
-          default: {}
-          example:
-            source: parent_agent
-            task_type: code_review
-      required:
-      - agent_key
     InlineSubAgentToolConfiguration:
       title: InlineSubAgentToolConfiguration
       description: A sub-agent tool configuration defined inline in the agent for
@@ -14885,53 +15769,6 @@ components:
       - sub_agent_configuration
       x-vectaraParents:
       - AgentToolConfiguration
-    ArtifactReadToolParameters:
-      description: Configurable parameters for the artifact read tool. If not overridden,
-        they will be required by the LLM to fill in.
-      type: object
-      properties:
-        artifact_id:
-          description: The ID of the artifact to read.
-          type: string
-          example: art_abc123
-        encoding:
-          description: The encoding format for the content.
-          type: string
-          enum:
-          - raw
-          - base64
-          example: raw
-        start_line:
-          description: Optional starting line number (1-indexed).
-          type: integer
-          format: int32
-          example: 100
-        end_line:
-          description: Optional ending line number (1-indexed, inclusive).
-          type: integer
-          format: int32
-          example: 200
-      additionalProperties: false
-    ArtifactReadConfiguration:
-      description: User-configurable settings for the artifact read tool.
-      type: object
-      properties:
-        max_size_bytes:
-          description: Maximum file size in bytes for full reads without line ranges.
-            Defaults to 256KB.
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 10485760
-          default: 262144
-        max_lines:
-          description: Maximum number of lines for range-based reads. Defaults to
-            200.
-          type: integer
-          format: int32
-          minimum: 1
-          maximum: 10000
-          default: 200
     InlineArtifactReadToolConfiguration:
       title: InlineArtifactReadToolConfiguration
       description: An artifact read tool configuration defined inline in the agent
@@ -14953,28 +15790,6 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
-    ArtifactGrepToolParameters:
-      description: Configurable parameters for the artifact grep tool. If not overridden,
-        they will be required by the LLM to fill in.
-      type: object
-      properties:
-        artifact_id:
-          description: The ID of the artifact to search.
-          type: string
-          example: art_abc123
-        pattern:
-          description: The pattern to search for (supports grep regex).
-          type: string
-          example: error|exception
-        grep_options:
-          description: Optional grep command options.
-          type: array
-          items:
-            type: string
-          example:
-          - -i
-          - -n
-      additionalProperties: false
     InlineArtifactGrepToolConfiguration:
       title: InlineArtifactGrepToolConfiguration
       description: An artifact grep tool configuration defined inline in the agent
@@ -14994,26 +15809,6 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
-    ImageReadToolParameters:
-      description: Configurable parameters for the image read tool. If not overridden,
-        they will be required by the LLM to fill in.
-      type: object
-      properties:
-        artifact_id:
-          description: The ID of the image artifact to view.
-          type: string
-          pattern: ^art_[a-z0-9_-]+$
-          example: art_photo_a3f2
-        detail:
-          description: Detail level for image processing.
-          type: string
-          enum:
-          - auto
-          - low
-          - high
-          default: auto
-          example: auto
-      additionalProperties: false
     InlineImageReadToolConfiguration:
       title: InlineImageReadToolConfiguration
       description: An image read tool configuration defined inline in the agent for
@@ -15033,27 +15828,6 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
-    DocumentConversionToolParameters:
-      description: Configurable parameters for the document conversion tool. If not
-        overridden, they will be required by the LLM to fill in.
-      type: object
-      properties:
-        artifact_id:
-          description: The ID of the artifact to convert.
-          type: string
-          example: art_abc123
-        output_format:
-          description: Output format for the converted document.
-          type: string
-          enum:
-          - markdown
-          - structured_document
-          example: markdown
-        description:
-          description: Optional description for the converted artifact.
-          type: string
-          example: PDF converted to markdown
-      additionalProperties: false
     InlineDocumentConversionToolConfiguration:
       title: InlineDocumentConversionToolConfiguration
       description: A document conversion tool configuration defined inline in the
@@ -15073,46 +15847,6 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
-    GetDocumentTextParameters:
-      description: Configurable parameters for the get document text tool. If not
-        overridden, they will be required by the LLM to fill in.
-      type: object
-      properties:
-        document_id:
-          description: The document ID of the document to fetch text from.
-          type: string
-          minLength: 1
-          example: doc_12345
-        corpus_key:
-          description: The corpus key containing the document.
-          type: string
-          minLength: 1
-          example: my-corpus
-      additionalProperties: false
-    GetDocumentTextConfiguration:
-      description: User-configurable settings for the get document text tool. These
-        parameters are never exposed to the agent.
-      type: object
-      properties:
-        metadata:
-          type: object
-          description: Configuration for document metadata retrieval.
-          properties:
-            include:
-              type: boolean
-              description: Whether to include document metadata in the response. If
-                false, metadata artifact will not be created.
-              default: true
-            exclude_paths:
-              type: array
-              items:
-                type: string
-              description: List of JSONPath expressions for metadata fields to exclude
-                from the returned metadata.
-              default: []
-              example:
-              - $.internal.processedAt
-              - $.debug
     InlineGetDocumentTextToolConfiguration:
       title: InlineGetDocumentTextToolConfiguration
       description: A get document text tool configuration defined inline in the agent
@@ -16514,8 +17248,18 @@ components:
           default: 0
           example: 60
         from_session:
-          description: Create a new session by forking an existing one. Compacts the
-            source history into a summary and copies artifacts.
+          description: 'Create a new session by forking an existing one. By default,
+            copies all visible events
+
+            and artifacts from the source session without compaction. Optionally specify
+            exactly one of
+
+            include_up_to_event_id or compact_up_to_event_id to control which events
+            are included
+
+            and whether they are compacted. These two fields are mutually exclusive.
+
+            '
           type: object
           properties:
             agent_key:
@@ -16524,10 +17268,29 @@ components:
             session_key:
               description: Session key of the source session.
               type: string
-            compact_up_to_event_id:
-              description: Only compact events up to this event ID from the source.
-                If omitted, compacts all events.
+            include_up_to_event_id:
+              description: 'Only include events up to and including this event ID
+                from the source session,
+
+                copying them verbatim. Events after this ID are excluded. If null
+                (the default),
+
+                all visible events are included. Mutually exclusive with compact_up_to_event_id.
+
+                '
               type: string
+              nullable: true
+            compact_up_to_event_id:
+              description: 'Compact all source events up to this event ID into a summary
+                instead of
+
+                copying them verbatim. If null (the default), events are copied verbatim.
+
+                Mutually exclusive with include_up_to_event_id.
+
+                '
+              type: string
+              nullable: true
           required:
           - session_key
     UpdateAgentSessionRequest:
@@ -17919,4 +18682,512 @@ components:
           $ref: '#/components/schemas/ListMetadata'
       required:
       - executions
+      - metadata
+    PipelineStatus:
+      description: The current operational status of the pipeline.
+      type: string
+      enum:
+      - initializing
+      - active
+      - paused
+      - error
+    PipelineKey:
+      description: The unique key for the pipeline. Can be user-provided or auto-generated.
+      type: string
+      pattern: '[0-9a-zA-Z_-]+'
+      minLength: 1
+      maxLength: 50
+      example: sharepoint-legal-ingest
+    PipelineName:
+      description: The human-readable name of the pipeline.
+      type: string
+      minLength: 1
+      maxLength: 255
+      example: SharePoint Legal Docs Ingest
+    SharepointSourceConfiguration:
+      description: Configuration for ingesting documents from a SharePoint site.
+      type: object
+      x-vectaraParents:
+      - PipelineSource
+      properties:
+        type:
+          type: string
+          default: sharepoint
+          example: sharepoint
+        site_url:
+          description: The full URL of the SharePoint site.
+          type: string
+          example: https://contoso.sharepoint.com/sites/legal
+        tenant_id:
+          description: Azure AD tenant ID.
+          type: string
+          example: 72f988bf-86f1-41af-91ab-2d7cd011db47
+        client_id:
+          description: Azure AD application (client) ID for OAuth.
+          type: string
+          example: 0a1b2c3d-4e5f-6789-abcd-ef0123456789
+        client_secret:
+          description: Azure AD client secret. Encrypted at rest and not returned
+            in responses.
+          type: string
+          writeOnly: true
+        drive_id:
+          description: The ID of a specific document library. If omitted, the default
+            document library is used.
+          type: string
+        folder_path:
+          description: Optional folder path to scope ingestion to a subdirectory.
+          type: string
+          example: /Contracts/2026
+      required:
+      - type
+      - site_url
+      - tenant_id
+      - client_id
+      - client_secret
+    DocumentumSourceConfiguration:
+      description: Configuration for ingesting documents from OpenText Documentum.
+      type: object
+      x-vectaraParents:
+      - PipelineSource
+      properties:
+        type:
+          type: string
+          default: documentum
+          example: documentum
+        base_url:
+          description: The Documentum REST API base URL.
+          type: string
+          example: https://documentum.example.com/dctm-rest
+        repository:
+          description: The Documentum repository name.
+          type: string
+          example: my_repo
+        username:
+          description: Documentum username for authentication.
+          type: string
+        password:
+          description: Documentum password. Encrypted at rest and not returned in
+            responses.
+          type: string
+          writeOnly: true
+        cabinet_path:
+          description: Optional cabinet or folder path to scope ingestion.
+          type: string
+          example: /Legal/Contracts
+        dql_filter:
+          description: Optional DQL qualification to filter documents (e.g. type or
+            date constraints).
+          type: string
+          example: r_modify_date > DATE('2026-01-01','yyyy-mm-dd')
+      required:
+      - type
+      - base_url
+      - repository
+      - username
+      - password
+    S3SourceConfiguration:
+      description: Configuration for ingesting objects from an Amazon S3 bucket.
+      type: object
+      x-vectaraParents:
+      - PipelineSource
+      properties:
+        type:
+          type: string
+          default: s3
+          example: s3
+        bucket:
+          description: The S3 bucket name.
+          type: string
+          example: my-documents-bucket
+        prefix:
+          description: Key prefix to scope ingestion to a subset of objects.
+          type: string
+          example: legal/contracts/
+        region:
+          description: AWS region where the bucket is located.
+          type: string
+          example: us-east-1
+        access_key_id:
+          description: AWS access key ID. Encrypted at rest and not returned in responses.
+          type: string
+          writeOnly: true
+        secret_access_key:
+          description: AWS secret access key. Encrypted at rest and not returned in
+            responses.
+          type: string
+          writeOnly: true
+      required:
+      - type
+      - bucket
+      - region
+      - access_key_id
+      - secret_access_key
+    PipelineSource:
+      description: The source system to ingest data from.
+      discriminator:
+        propertyName: type
+        mapping:
+          sharepoint: '#/components/schemas/SharepointSourceConfiguration'
+          documentum: '#/components/schemas/DocumentumSourceConfiguration'
+          s3: '#/components/schemas/S3SourceConfiguration'
+      oneOf:
+      - $ref: '#/components/schemas/SharepointSourceConfiguration'
+      - $ref: '#/components/schemas/DocumentumSourceConfiguration'
+      - $ref: '#/components/schemas/S3SourceConfiguration'
+    CronTriggerConfiguration:
+      description: Run the pipeline on a cron schedule.
+      type: object
+      x-vectaraParents:
+      - PipelineTrigger
+      properties:
+        type:
+          type: string
+          default: cron
+          example: cron
+        expression:
+          description: A 5-field cron expression (minute, hour, day-of-month, month,
+            day-of-week) in UTC.
+          type: string
+          x-vectara-cron: true
+          example: 0 */6 * * *
+      required:
+      - type
+      - expression
+    IntervalTriggerConfiguration:
+      description: Run the pipeline at a fixed interval.
+      type: object
+      x-vectaraParents:
+      - PipelineTrigger
+      properties:
+        type:
+          type: string
+          default: interval
+          example: interval
+        duration:
+          description: An ISO-8601 duration specifying the interval between runs.
+          type: string
+          x-vectara-duration: true
+          example: PT1H
+      required:
+      - type
+      - duration
+    PipelineTrigger:
+      description: Defines when the pipeline runs.
+      discriminator:
+        propertyName: type
+        mapping:
+          cron: '#/components/schemas/CronTriggerConfiguration'
+          interval: '#/components/schemas/IntervalTriggerConfiguration'
+      oneOf:
+      - $ref: '#/components/schemas/CronTriggerConfiguration'
+      - $ref: '#/components/schemas/IntervalTriggerConfiguration'
+    AgentTransformConfiguration:
+      description: 'Process source data using an agent. Each run creates one or more
+        agent sessions
+
+        and sends source records as input for the agent to act on per its instructions.
+
+        '
+      type: object
+      x-vectaraParents:
+      - PipelineTransform
+      properties:
+        type:
+          type: string
+          default: agent
+          example: agent
+        agent_key:
+          $ref: '#/components/schemas/AgentKey'
+      required:
+      - type
+      - agent_key
+    PipelineTransform:
+      description: 'Defines how source data is processed. Currently only agent transforms
+        are supported.
+
+        '
+      type: object
+      discriminator:
+        propertyName: type
+        mapping:
+          agent: '#/components/schemas/AgentTransformConfiguration'
+      properties:
+        type:
+          description: The type of transform.
+          type: string
+          default: agent
+          example: agent
+      oneOf:
+      - $ref: '#/components/schemas/AgentTransformConfiguration'
+    PipelineSyncMode:
+      description: 'How the pipeline syncs data from the source.
+
+        - `incremental`: Only process new or changed records since the last watermark.
+
+        - `full_refresh`: Process all records from the source on each run.
+
+        '
+      type: string
+      enum:
+      - incremental
+      - full_refresh
+      default: incremental
+    PipelineWatermark:
+      description: Tracks incremental sync progress. The value is opaque and source-specific
+        (e.g. a timestamp or change token).
+      type: object
+      readOnly: true
+      properties:
+        value:
+          description: The current watermark value.
+          type: string
+          example: '2026-02-19T08:00:00Z'
+        updated_at:
+          description: When the watermark was last advanced.
+          type: string
+          format: date-time
+      required:
+      - value
+      - updated_at
+    Pipeline:
+      description: "A pipeline is an automated data flow that sends all data from\
+        \ a source system to an agent\nfor the agent to act on per its instructions.\
+        \ A new agent session is created for each source\nrecord, giving the agent\
+        \ full autonomy to decide what to do with each piece of data \u2014 index\
+        \ it\ninto a corpus, extract structured information, route it, or discard\
+        \ it.\n\nThis is distinct from an **agent schedule**, which is a recurring\
+        \ single execution of an\nagent with a fixed message. A schedule creates one\
+        \ session per trigger; a pipeline creates\na session per source record.\n\n\
+        This is also distinct from an **agent connector** (e.g. Slack), which is a\
+        \ bidirectional\nintegration for interactive chat with an agent. A pipeline\
+        \ is a one-directional automated\nflow of all data through an agent.\n"
+      type: object
+      properties:
+        key:
+          $ref: '#/components/schemas/PipelineKey'
+        name:
+          $ref: '#/components/schemas/PipelineName'
+        description:
+          description: A description of what this pipeline does.
+          type: string
+          example: Ingests legal contracts from SharePoint and indexes them into the
+            legal corpus.
+        source:
+          $ref: '#/components/schemas/PipelineSource'
+        trigger:
+          $ref: '#/components/schemas/PipelineTrigger'
+        transform:
+          $ref: '#/components/schemas/PipelineTransform'
+        sync_mode:
+          $ref: '#/components/schemas/PipelineSyncMode'
+        watermark:
+          description: The current incremental sync watermark. Null if the pipeline
+            has never run.
+          allOf:
+          - $ref: '#/components/schemas/PipelineWatermark'
+          nullable: true
+        status:
+          $ref: '#/components/schemas/PipelineStatus'
+        status_message:
+          description: Human-readable status details, such as an error description.
+          type: string
+          nullable: true
+        enabled:
+          description: Whether the pipeline is enabled. Disabled pipelines do not
+            run on their trigger schedule.
+          type: boolean
+          default: true
+        metadata:
+          description: Arbitrary key-value metadata for the pipeline.
+          type: object
+          additionalProperties:
+            type: string
+        created_at:
+          description: When the pipeline was created.
+          type: string
+          format: date-time
+        updated_at:
+          description: When the pipeline was last updated.
+          type: string
+          format: date-time
+      required:
+      - key
+      - name
+      - source
+      - trigger
+      - transform
+      - sync_mode
+      - status
+      - enabled
+      - created_at
+    ListPipelinesResponse:
+      description: Response containing a list of pipelines.
+      type: object
+      properties:
+        pipelines:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pipeline'
+        metadata:
+          $ref: '#/components/schemas/ListMetadata'
+      required:
+      - pipelines
+      - metadata
+    CreatePipelineRequest:
+      description: Request to create a new pipeline.
+      type: object
+      properties:
+        key:
+          description: A user-provided key for the pipeline. If omitted, one is auto-generated.
+          allOf:
+          - $ref: '#/components/schemas/PipelineKey'
+        name:
+          $ref: '#/components/schemas/PipelineName'
+        description:
+          type: string
+        source:
+          $ref: '#/components/schemas/PipelineSource'
+        trigger:
+          $ref: '#/components/schemas/PipelineTrigger'
+        transform:
+          $ref: '#/components/schemas/PipelineTransform'
+        sync_mode:
+          $ref: '#/components/schemas/PipelineSyncMode'
+        enabled:
+          type: boolean
+          default: true
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          default: {}
+      required:
+      - name
+      - source
+      - trigger
+      - transform
+    UpdatePipelineRequest:
+      description: Request to partially update an existing pipeline. Omitted fields
+        are preserved.
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/PipelineName'
+        description:
+          type: string
+          nullable: true
+        source:
+          $ref: '#/components/schemas/PipelineSource'
+        trigger:
+          $ref: '#/components/schemas/PipelineTrigger'
+        transform:
+          $ref: '#/components/schemas/PipelineTransform'
+        sync_mode:
+          $ref: '#/components/schemas/PipelineSyncMode'
+        enabled:
+          type: boolean
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+          nullable: true
+    PipelineRunId:
+      description: The unique identifier for a pipeline run.
+      type: string
+      pattern: run_[0-9a-zA-Z_-]+
+      example: run_20260219_001
+    PipelineRunStatus:
+      description: The status of a pipeline run.
+      type: string
+      enum:
+      - queued
+      - running
+      - completed
+      - failed
+      - cancelled
+    PipelineRunTriggerType:
+      description: What initiated the pipeline run.
+      type: string
+      enum:
+      - scheduled
+      - manual
+    PipelineRun:
+      description: 'A single execution of a pipeline. Each run fetches data from the
+        source and creates one
+
+        agent session per record. Each record is mapped 1:1 to a session.
+
+        '
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/PipelineRunId'
+        pipeline_key:
+          $ref: '#/components/schemas/PipelineKey'
+        status:
+          $ref: '#/components/schemas/PipelineRunStatus'
+        trigger_type:
+          $ref: '#/components/schemas/PipelineRunTriggerType'
+        records_fetched:
+          description: Number of records discovered from the source in this run.
+          type: integer
+          format: int32
+          default: 0
+        records_processed:
+          description: Number of records successfully processed by the agent.
+          type: integer
+          format: int32
+          default: 0
+        records_failed:
+          description: Number of records that failed processing.
+          type: integer
+          format: int32
+          default: 0
+        session_keys:
+          description: The agent sessions created during this run, one per source
+            record processed.
+          type: array
+          items:
+            type: string
+        error:
+          description: Error details if the run failed.
+          type: string
+          nullable: true
+        started_at:
+          description: When the run started executing.
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          description: When the run finished.
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          description: When the run was created.
+          type: string
+          format: date-time
+      required:
+      - id
+      - pipeline_key
+      - status
+      - trigger_type
+      - records_fetched
+      - records_processed
+      - records_failed
+      - session_keys
+      - created_at
+    ListPipelineRunsResponse:
+      description: Response containing a list of pipeline runs.
+      type: object
+      properties:
+        runs:
+          type: array
+          items:
+            $ref: '#/components/schemas/PipelineRun'
+        metadata:
+          $ref: '#/components/schemas/ListMetadata'
+      required:
+      - runs
       - metadata

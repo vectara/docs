@@ -385,6 +385,24 @@ const sidebars: SidebarsConfig = {
                 },
                 {
                   type: "doc",
+                  id: "rest-api/delete-agent-event",
+                  label: "Delete agent event",
+                  className: "api-method delete",
+                },
+                {
+                  type: "doc",
+                  id: "rest-api/hide-agent-event",
+                  label: "Hide agent event",
+                  className: "api-method post",
+                },
+                {
+                  type: "doc",
+                  id: "rest-api/unhide-agent-event",
+                  label: "Unhide agent event",
+                  className: "api-method post",
+                },
+                {
+                  type: "doc",
                   id: "rest-api/list-session-artifacts",
                   label: "List session artifacts",
                   className: "api-method get",
@@ -407,8 +425,38 @@ const sidebars: SidebarsConfig = {
               items: [
                 {
                   type: "doc",
+                  id: "rest-api/create-agent-schedule",
+                  label: "Create agent schedule",
+                  className: "api-method post",
+                },
+                {
+                  type: "doc",
                   id: "rest-api/list-agent-schedules",
                   label: "List agent schedules",
+                  className: "api-method get",
+                },
+                {
+                  type: "doc",
+                  id: "rest-api/get-agent-schedule",
+                  label: "Get agent schedule",
+                  className: "api-method get",
+                },
+                {
+                  type: "doc",
+                  id: "rest-api/update-agent-schedule",
+                  label: "Update agent schedule",
+                  className: "api-method patch",
+                },
+                {
+                  type: "doc",
+                  id: "rest-api/delete-agent-schedule",
+                  label: "Delete agent schedule",
+                  className: "api-method delete",
+                },
+                {
+                  type: "doc",
+                  id: "rest-api/list-agent-schedule-executions",
+                  label: "List agent schedule executions",
                   className: "api-method get",
                 },
               ],
@@ -1027,6 +1075,12 @@ const sidebars: SidebarsConfig = {
                   id: "rest-api/get-llm",
                   label: "Get an LLM",
                   className: "api-method get",
+                },
+                {
+                  type: "doc",
+                  id: "rest-api/update-llm",
+                  label: "Update an LLM",
+                  className: "api-method patch",
                 },
                 {
                   type: "doc",
