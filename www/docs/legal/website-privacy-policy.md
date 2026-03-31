@@ -117,7 +117,7 @@ We retain your information for as long as necessary to fulfill the purposes outl
 
 - **Analytics Data**: Retained for up to 2 years (Google Analytics) or 90 days (Vectara Snow Analytics)
 - **Session Recordings**: Retained according to Reo.dev's retention policy
-- **Cookie Consent Records**: Retained for 1 year
+- **Cookie Consent Records**: Retained for 1 year (stored in cc_cookie_vectara_docs)
 - **Contact Inquiries**: Retained for as long as necessary to respond and for a reasonable period thereafter
 
 When data is no longer needed, we securely delete or anonymize it.

@@ -891,7 +891,7 @@
       Xe({
         // Cookie settings
         cookie: {
-          name: "cc_cookie",
+          name: "cc_cookie_vectara_docs",
           domain: cookieDomain,
           path: "/",
           expiresAfterDays: 365,

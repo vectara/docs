@@ -30,7 +30,7 @@ These cookies are essential for the website to function properly. They enable ba
 
 | Cookie Name | Domain | Duration | Description | Provider |
 |-------------|--------|----------|-------------|----------|
-| cc_cookie | vectara.com | 1 year | Stores your cookie consent preferences | Vectara |
+| cc_cookie_vectara_docs | vectara.com | 1 year | Stores your cookie consent preferences | Vectara |
 
 ### Analytics Cookies
 

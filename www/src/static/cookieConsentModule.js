@@ -22,7 +22,7 @@ if (typeof window !== 'undefined') {
     CookieConsent.run({
       // Cookie settings
       cookie: {
-        name: 'cc_cookie',
+        name: 'cc_cookie_vectara_docs',
         domain: cookieDomain,
         path: '/',
         expiresAfterDays: 365,
