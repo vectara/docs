@@ -8,6 +8,10 @@
 .docusaurus
 .cache-loader
 
+# Compiled static files (built from src/static/)
+static/analytics.js
+static/cookieConsentModule.js
+
 # Misc
 .DS_Store
 .env.local

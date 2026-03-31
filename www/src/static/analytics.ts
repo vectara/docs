@@ -1,6 +1,12 @@
 import googleTagManager from "@analytics/google-tag-manager";
 
 (function () {
+  // Check for analytics consent before initializing
+  if (window.VectaraConsent && !window.VectaraConsent.hasConsent('analytics')) {
+    console.log('[Analytics] Waiting for consent before initializing');
+    return;
+  }
+
   function loadLib() {
     const scripts = document.getElementsByTagName("script");
     const cdnLink = "https://console.vectara.com/ua.js";
@@ -51,8 +57,11 @@ import googleTagManager from "@analytics/google-tag-manager";
       window.location.hostname === "localhost" ? "localhost" : "vectara.com";
 
     if (!persistedAnonymousId) {
-      // Expire the cookie in 1 year.
-      document.cookie = `${ANONYMOUS_ID_COOKIE_NAME}=${anonymousId}; path=/; max-age=31536000; domain=${domain}`;
+      // Only set cookie if analytics consent is granted
+      if (window.VectaraConsent && window.VectaraConsent.hasConsent('analytics')) {
+        // Expire the cookie in 1 year.
+        document.cookie = `${ANONYMOUS_ID_COOKIE_NAME}=${anonymousId}; path=/; max-age=31536000; domain=${domain}`;
+      }
     }
 
     const identity = {
@@ -99,6 +108,12 @@ import googleTagManager from "@analytics/google-tag-manager";
         console.log("payload", payload);
       },
       page: ({ payload }: any) => {
+        // Only send data if analytics consent is granted
+        if (!window.VectaraConsent || !window.VectaraConsent.hasConsent('analytics')) {
+          console.log('[Analytics] Skipping Snow Analytics - no consent');
+          return;
+        }
+
         // Send data to snow endpoint
         const pageObject = payloadToPageObject(payload);
         const pageJSON = JSON.stringify(pageObject);
