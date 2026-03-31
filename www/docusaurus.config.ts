@@ -208,15 +208,7 @@ ${content}
           title: "Legal",
           items: [
             {
-              label: "Privacy Policy",
-              to: "docs/legal/website-privacy-policy",
-            },
-            {
-              label: "Cookie Policy",
-              to: "docs/legal/cookie-policy",
-            },
-            {
-              label: "Manage Cookie Preferences",
+              label: "Cookie settings",
               href: "#manage-cookies",
             },
           ],
