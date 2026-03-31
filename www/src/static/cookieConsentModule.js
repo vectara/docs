@@ -8,11 +8,11 @@
 import * as CookieConsent from "vanilla-cookieconsent";
 import { initializeConsentManager } from "./consentManager.js";
 
-// Initialize consent manager first
-initializeConsentManager();
-
 // Initialize cookie consent on DOM load
 if (typeof window !== "undefined") {
+  // Initialize consent manager first
+  initializeConsentManager();
+
   window.addEventListener("DOMContentLoaded", function () {
     console.log("[CookieConsent] Initializing cookie consent");
 

@@ -6,8 +6,10 @@
  */
 
 // Global flags to track if services have been loaded
-window.analyticsLoaded = false;
-window.reodevLoaded = false;
+if (typeof window !== 'undefined') {
+  window.analyticsLoaded = false;
+  window.reodevLoaded = false;
+}
 
 /**
  * Check if user has consented to a specific category
