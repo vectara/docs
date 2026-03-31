@@ -113,6 +113,7 @@ ${content}
   clientModules: [
     "./static/cookieConsentModule.js",
     "./static/routeUpdateModule.js",
+    "./static/cookiePreferencesLink.js",
   ],
 
   themes: ["docusaurus-theme-openapi-docs", "@docusaurus/theme-mermaid"],
@@ -216,8 +217,7 @@ ${content}
             },
             {
               label: "Manage Cookie Preferences",
-              href: "#",
-              onClick: "javascript:window.CookieConsent?.showPreferences()",
+              href: "#manage-cookies",
             },
           ],
         },
