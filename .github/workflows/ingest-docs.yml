@@ -5,8 +5,8 @@ on:
   push:
     branches:
       - main
-  paths:
-    - www/**
+    paths:
+      - www/**
 jobs:
   run-ingestion:
     runs-on: ubuntu-latest
