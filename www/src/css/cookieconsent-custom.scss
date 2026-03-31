@@ -52,11 +52,17 @@
   border-radius: 8px;
 }
 
-/* Force modal visibility when animation class is present */
-#cc-main .cc--anim .cm {
+/* Force modal visibility when animation class is present AND not aria-hidden */
+#cc-main .cc--anim .cm[aria-hidden="false"] {
   opacity: 1 !important;
   visibility: visible !important;
   transform: translateY(0) !important;
+}
+
+/* Ensure modal is properly hidden when aria-hidden is true */
+#cc-main .cm[aria-hidden="true"] {
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 
 /* Banner buttons */
