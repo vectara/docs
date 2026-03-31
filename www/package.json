@@ -4,6 +4,11 @@
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
+    "prebuild": "npm run build:static",
+    "prestart": "npm run build:static",
+    "build:static": "npm run build:analytics && npm run build:consent",
+    "build:analytics": "esbuild src/static/analytics.ts --bundle --outfile=static/analytics.js --format=iife --platform=browser",
+    "build:consent": "esbuild src/static/cookieConsentModule.js --bundle --outfile=static/cookieConsentModule.js --format=iife --platform=browser",
     "start": "docusaurus start --port 3205",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
@@ -41,6 +46,7 @@
     "@docusaurus/module-type-aliases": "3.7.0",
     "@docusaurus/tsconfig": "3.7.0",
     "@docusaurus/types": "3.7.0",
+    "esbuild": "^0.20.0",
     "sass": "^1.86.0",
     "sass-loader": "^16.0.5",
     "typescript": "~5.6.2"
