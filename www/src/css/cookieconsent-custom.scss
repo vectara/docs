@@ -52,6 +52,13 @@
   border-radius: 8px;
 }
 
+/* Force modal visibility when animation class is present */
+#cc-main .cc--anim .cm {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) !important;
+}
+
 /* Banner buttons */
 #cc-main .cm__btn {
   border-radius: 4px;
