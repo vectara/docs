@@ -110,12 +110,10 @@ ${content}
     ],
   ],
 
-  scripts: [
-    { src: "/analytics.js", async: true },
-    { src: "/scripts/reodev.js", async: true },
+  clientModules: [
+    "./static/cookieConsentModule.js",
+    "./static/routeUpdateModule.js",
   ],
-
-  clientModules: ["./static/routeUpdateModule.js"],
 
   themes: ["docusaurus-theme-openapi-docs", "@docusaurus/theme-mermaid"],
 
@@ -202,6 +200,24 @@ ${content}
             {
               label: "Admin",
               to: "docs/api-reference/admin-apis/admin",
+            },
+          ],
+        },
+        {
+          title: "Legal",
+          items: [
+            {
+              label: "Privacy Policy",
+              to: "docs/legal/website-privacy-policy",
+            },
+            {
+              label: "Cookie Policy",
+              to: "docs/legal/cookie-policy",
+            },
+            {
+              label: "Manage Cookie Preferences",
+              href: "#",
+              onClick: "javascript:window.CookieConsent?.showPreferences()",
             },
           ],
         },

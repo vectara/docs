@@ -1,5 +1,8 @@
 /* Reset */
 
+@import '~vanilla-cookieconsent/dist/cookieconsent.css';
+@import './cookieconsent-custom.scss';
+
 :root {
   /* --ifm-code-font-size: 95%; */
   font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,

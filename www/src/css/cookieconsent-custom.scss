@@ -1,0 +1,242 @@
+/**
+ * Custom styles for vanilla-cookieconsent
+ * Matches Vectara brand colors and supports light/dark themes
+ */
+
+:root {
+  /* Vectara brand colors */
+  --cc-bg: #ffffff;
+  --cc-text: #2c313a;
+  --cc-btn-primary-bg: #7027f6;
+  --cc-btn-primary-hover-bg: #5a1fcc;
+  --cc-btn-secondary-bg: transparent;
+  --cc-btn-secondary-hover-bg: #f1f4f6;
+  --cc-separator: #cbcdde;
+  --cc-cookie-category-block-bg: #f3f7fb;
+  --cc-cookie-category-block-border: #e3e4f3;
+  --cc-toggle-on-bg: #7027f6;
+  --cc-toggle-off-bg: #cbcdde;
+  --cc-toggle-readonly-bg: #69707d;
+  --cc-link-color: rgb(38, 76, 214);
+}
+
+[data-theme="dark"] {
+  --cc-bg: #1b1b1d;
+  --cc-text: #ffffff;
+  --cc-btn-primary-bg: #7027f6;
+  --cc-btn-primary-hover-bg: #8847f9;
+  --cc-btn-secondary-bg: transparent;
+  --cc-btn-secondary-hover-bg: #2c313a;
+  --cc-separator: #69707d;
+  --cc-cookie-category-block-bg: #2c313a;
+  --cc-cookie-category-block-border: #393a43;
+  --cc-toggle-on-bg: #7027f6;
+  --cc-toggle-off-bg: #69707d;
+  --cc-toggle-readonly-bg: #69707d;
+  --cc-link-color: rgb(131, 158, 255);
+}
+
+/* Override library defaults with our brand colors */
+#cc-main {
+  --cc-font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Open Sans, Helvetica Neue, sans-serif;
+}
+
+/* Banner styling */
+#cc-main .cm {
+  background-color: var(--cc-bg);
+  color: var(--cc-text);
+  border: 1px solid var(--cc-separator);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+}
+
+/* Banner buttons */
+#cc-main .cm__btn {
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+#cc-main .cm__btn--primary {
+  background-color: var(--cc-btn-primary-bg);
+  color: #ffffff;
+  border-color: var(--cc-btn-primary-bg);
+}
+
+#cc-main .cm__btn--primary:hover {
+  background-color: var(--cc-btn-primary-hover-bg);
+  border-color: var(--cc-btn-primary-hover-bg);
+}
+
+#cc-main .cm__btn--secondary {
+  background-color: var(--cc-btn-secondary-bg);
+  color: var(--cc-text);
+  border-color: var(--cc-separator);
+}
+
+#cc-main .cm__btn--secondary:hover {
+  background-color: var(--cc-btn-secondary-hover-bg);
+}
+
+/* Banner links */
+#cc-main .cm a {
+  color: var(--cc-link-color);
+  text-decoration: none;
+}
+
+#cc-main .cm a:hover {
+  text-decoration: underline;
+}
+
+/* Preferences modal */
+#cc-main .pm {
+  background-color: var(--cc-bg);
+  color: var(--cc-text);
+  border: 1px solid var(--cc-separator);
+}
+
+#cc-main .pm__section {
+  border-bottom: 1px solid var(--cc-separator);
+}
+
+#cc-main .pm__section:last-child {
+  border-bottom: none;
+}
+
+/* Preferences modal header */
+#cc-main .pm__header {
+  background-color: var(--cc-bg);
+  border-bottom: 1px solid var(--cc-separator);
+}
+
+#cc-main .pm__title {
+  color: var(--cc-text);
+}
+
+#cc-main .pm__close-btn {
+  color: var(--cc-text);
+  border: 1px solid var(--cc-separator);
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+#cc-main .pm__close-btn:hover {
+  background-color: var(--cc-btn-secondary-hover-bg);
+}
+
+/* Cookie category blocks */
+#cc-main .pm__section-desc-wrapper {
+  background-color: var(--cc-cookie-category-block-bg);
+  border: 1px solid var(--cc-cookie-category-block-border);
+  border-radius: 4px;
+  padding: 12px;
+}
+
+/* Toggle switches */
+#cc-main .section__toggle {
+  cursor: pointer;
+}
+
+#cc-main .section__toggle:not(.toggle--readonly) .toggle__icon {
+  background-color: var(--cc-toggle-off-bg);
+}
+
+#cc-main .section__toggle.toggle--on:not(.toggle--readonly) .toggle__icon {
+  background-color: var(--cc-toggle-on-bg);
+}
+
+#cc-main .section__toggle.toggle--readonly .toggle__icon {
+  background-color: var(--cc-toggle-readonly-bg);
+  cursor: not-allowed;
+}
+
+/* Cookie tables */
+#cc-main .pm__table {
+  border: 1px solid var(--cc-separator);
+  border-collapse: collapse;
+}
+
+#cc-main .pm__table th {
+  background-color: var(--cc-cookie-category-block-bg);
+  border-bottom: 1px solid var(--cc-cookie-category-block-border);
+  color: var(--cc-text);
+  font-weight: 600;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+#cc-main .pm__table td {
+  border-bottom: 1px solid var(--cc-cookie-category-block-border);
+  color: var(--cc-text);
+  padding: 8px 12px;
+}
+
+#cc-main .pm__table tr:last-child td {
+  border-bottom: none;
+}
+
+#cc-main .pm__table tr:hover {
+  background-color: var(--cc-cookie-category-block-bg);
+}
+
+/* Footer buttons in preferences modal */
+#cc-main .pm__footer {
+  background-color: var(--cc-bg);
+  border-top: 1px solid var(--cc-separator);
+}
+
+#cc-main .pm__btn {
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+#cc-main .pm__btn--primary {
+  background-color: var(--cc-btn-primary-bg);
+  color: #ffffff;
+  border-color: var(--cc-btn-primary-bg);
+}
+
+#cc-main .pm__btn--primary:hover {
+  background-color: var(--cc-btn-primary-hover-bg);
+  border-color: var(--cc-btn-primary-hover-bg);
+}
+
+#cc-main .pm__btn--secondary {
+  background-color: var(--cc-btn-secondary-bg);
+  color: var(--cc-text);
+  border-color: var(--cc-separator);
+}
+
+#cc-main .pm__btn--secondary:hover {
+  background-color: var(--cc-btn-secondary-hover-bg);
+}
+
+/* Overlay */
+#cc-main #cm-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #cc-main .cm {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  #cc-main .pm {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
+}
