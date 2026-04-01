@@ -26,7 +26,7 @@ if (typeof window !== "undefined") {
     CookieConsent.run({
       // Cookie settings
       cookie: {
-        name: "cc_cookie_vectara_docs",
+        name: "cc_cookie",
         domain: cookieDomain,
         path: "/",
         expiresAfterDays: 365,
