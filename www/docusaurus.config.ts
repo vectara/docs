@@ -47,20 +47,10 @@ const config: Config = {
             outputDir: "docs/rest-api",
             downloadUrl: "https://docs.vectara.com/vectara-oas-v2.yaml",
             sidebarOptions: {
-              groupPathsBy: "tag",
+              groupPathsBy: "tagGroup",
               categoryLinkSource: "tag",
             },
             baseUrl: "docs/rest-api/vectara-oas",
-            version: "2.0",
-            label: "v2.0",
-            versions: {
-              "1.0": {
-                specPath: "static/vectara-oas.yaml",
-                outputDir: "versioned_docs/version-1.0/rest-api",
-                label: "1.0",
-                baseUrl: "versioned_docs/version-1.0/rest-api/vectara-oas",
-              },
-            },
           },
         },
       },
@@ -85,11 +75,11 @@ id: ${filename.split("/").slice(-1)}
 title: ${filename.split("/").slice(-1)}
 custom_edit_url: https://github.com/vectara/getting-started/blob/main/language-examples/${filename}
 sidebar_label: ${String(filename.split(".").slice(-1))
-              .replace("py", "Python")
-              .replace("cs", "C#")
-              .replace("php", "PHP")
-              .replace("js", "NodeJS")
-              .replace("java", "Java")}
+  .replace("py", "Python")
+  .replace("cs", "C#")
+  .replace("php", "PHP")
+  .replace("js", "NodeJS")
+  .replace("java", "Java")}
 ---
 
 ${
@@ -110,13 +100,18 @@ ${content}
     ],
   ],
 
-  clientModules: [
-    "./static/cookieConsentModule.js",
-    "./static/routeUpdateModule.js",
-    "./static/cookiePreferencesLink.js",
+  scripts: [
+    { src: "/analytics.js", async: true },
+    { src: "/scripts/reodev.js", async: true },
+    { src: "/js/cleanCardDescriptions.js", async: true },
   ],
 
-  themes: ["docusaurus-theme-openapi-docs", "@docusaurus/theme-mermaid"],
+  clientModules: ["./static/routeUpdateModule.js"],
+
+  themes: [
+    "docusaurus-theme-openapi-docs",
+    "@docusaurus/theme-mermaid",
+  ],
 
   markdown: {
     mermaid: true, // Enable Mermaid parsing
@@ -124,18 +119,7 @@ ${content}
 
   themeConfig: {
     prism: {
-      additionalLanguages: [
-        "bash",
-        "python",
-        "javascript",
-        "json",
-        "yaml",
-        "sql",
-        "http",
-        "java",
-        "php",
-        "csharp",
-      ],
+      additionalLanguages: ["bash", "python", "javascript", "json", "yaml", "sql", "http", "java", "php", "csharp"],
       theme: themes.vsLight,
       darkTheme: themes.dracula,
     },
@@ -161,7 +145,9 @@ ${content}
           type: "dropdown",
           label: "SDKs",
           position: "left",
-          items: [{ label: "Python", to: "docs/sdk/vectara-python-sdk" }],
+          items: [
+            { label: "Python", to: "docs/sdk/vectara-python-sdk" },
+          ],
         },
         {
           type: "dropdown",
@@ -201,15 +187,6 @@ ${content}
             {
               label: "Admin",
               to: "docs/api-reference/admin-apis/admin",
-            },
-          ],
-        },
-        {
-          title: "Legal",
-          items: [
-            {
-              label: "Cookie settings",
-              href: "#manage-cookies",
             },
           ],
         },

@@ -260,7 +260,35 @@ const sidebars: SidebarsConfig = {
       ],
     },
       ],
+  // Auto-generated from OpenAPI spec via x-tagGroups in main.yaml
   restOAS: [
+    {
+      type: "category",
+      label: "API Reference",
+      link: {
+        type: "generated-index",
+        title: "Vectara REST API 2.0",
+        description: "Vectara REST API v2 reference documentation",
+        slug: "/rest-api",
+      },
+      items: [
+        {
+          type: "doc",
+          id: "rest-api/vectara-rest-api-v-2",
+          label: "Introduction",
+        },
+        ...apiSidebar.map((item: any) =>
+          item.type === "category" && Array.isArray(item.items)
+            ? { ...item, items: item.items.filter((c: any) => c.id !== "rest-api/vectara-rest-api-v-2") }
+            : item
+        ).filter((item: any) => !(item.type === "doc" && item.id === "rest-api/vectara-rest-api-v-2")),
+      ],
+    },
+  ],
+  /* Previous custom sidebar preserved in git history. To restore curation,
+     copy the manual sidebar from the merge commit and add any new tags.
+
+  REMOVED_restOAS: [
     {
       type: "category",
       label: "API Reference",
@@ -385,24 +413,6 @@ const sidebars: SidebarsConfig = {
                 },
                 {
                   type: "doc",
-                  id: "rest-api/delete-agent-event",
-                  label: "Delete agent event",
-                  className: "api-method delete",
-                },
-                {
-                  type: "doc",
-                  id: "rest-api/hide-agent-event",
-                  label: "Hide agent event",
-                  className: "api-method post",
-                },
-                {
-                  type: "doc",
-                  id: "rest-api/unhide-agent-event",
-                  label: "Unhide agent event",
-                  className: "api-method post",
-                },
-                {
-                  type: "doc",
                   id: "rest-api/list-session-artifacts",
                   label: "List session artifacts",
                   className: "api-method get",
@@ -411,52 +421,6 @@ const sidebars: SidebarsConfig = {
                   type: "doc",
                   id: "rest-api/get-session-artifact",
                   label: "Get session artifact",
-                  className: "api-method get",
-                },
-              ],
-            },
-            {
-              type: "category",
-              label: "Schedules",
-              link: {
-                type: "doc",
-                id: "rest-api/agent-schedules",
-              },
-              items: [
-                {
-                  type: "doc",
-                  id: "rest-api/create-agent-schedule",
-                  label: "Create agent schedule",
-                  className: "api-method post",
-                },
-                {
-                  type: "doc",
-                  id: "rest-api/list-agent-schedules",
-                  label: "List agent schedules",
-                  className: "api-method get",
-                },
-                {
-                  type: "doc",
-                  id: "rest-api/get-agent-schedule",
-                  label: "Get agent schedule",
-                  className: "api-method get",
-                },
-                {
-                  type: "doc",
-                  id: "rest-api/update-agent-schedule",
-                  label: "Update agent schedule",
-                  className: "api-method patch",
-                },
-                {
-                  type: "doc",
-                  id: "rest-api/delete-agent-schedule",
-                  label: "Delete agent schedule",
-                  className: "api-method delete",
-                },
-                {
-                  type: "doc",
-                  id: "rest-api/list-agent-schedule-executions",
-                  label: "List agent schedule executions",
                   className: "api-method get",
                 },
               ],
@@ -1078,12 +1042,6 @@ const sidebars: SidebarsConfig = {
                 },
                 {
                   type: "doc",
-                  id: "rest-api/update-llm",
-                  label: "Update an LLM",
-                  className: "api-method patch",
-                },
-                {
-                  type: "doc",
                   id: "rest-api/delete-llm",
                   label: "Delete an LLM",
                   className: "api-method delete",
@@ -1226,6 +1184,7 @@ const sidebars: SidebarsConfig = {
       ],
     },
   ],
+  */
   pythonSDK: [
     {
       type: "category",

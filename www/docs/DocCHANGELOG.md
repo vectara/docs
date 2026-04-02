@@ -1,7 +1,7 @@
 ---
 id: changelog
 slug: /changelog
-title: Vectara Documentation Changelog
+title: Documentation Changelog
 sidebar_label: Documentation Changelog
 ---
 
@@ -12,10 +12,20 @@ import { TopicButton } from "@site/src/components/ui/TopicButton";
 
 ---
 
+# April 2026
+
+### 📚 API Reference Updates
+- Updated the API Reference spec with all features released January–April 2026
+
+### 📝 Documentation Changes
+- Reorganized API Reference sidebar into grouped sections (Agents, Data, Search and Retrieval, Access Control, Analytics, Platform, Quality and Evaluation)
+
+---
+
 # January 2026
 
 ### 📝 Documentation Changes
-- Enhance Agents content with updated quickstart, concepts, instructions, and tools (#539)
+- Enhance Agents content with updated quickstart, concepts, instructions, and tools
 
 
 

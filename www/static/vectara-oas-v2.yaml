@@ -7,7 +7,7 @@ info:
     \ section and are designed to be intuitive and follow a standard RESTful structure.\n\
     \n- The current version is **v2**.\n- `api-endpoint` follows a hierarchical structure,\
     \ using lowercase and hyphens.\n  For example, `/corpora/:corpus_key/documents`.\n"
-  version: 2.0.0
+  version: '2.0'
   termsOfService: https://vectara.com/legal/terms-of-service/
   x-logo:
     url: https://docs.vectara.com/img/vectara_wordmark.png
@@ -32,6 +32,8 @@ tags:
 - name: Agent Schedules
   description: Create and manage scheduled automated execution of agents at specified
     intervals.
+- name: Agent Identity
+  description: View and manage the identity used by an agent to execute tools.
 - name: Guardrails
   description: List predefined guardrails for validating tool calls, agent outputs,
     and agent actions.
@@ -3642,7 +3644,1071 @@ paths:
         cursor: $request.page_key
         next_cursor: $response.metadata.page_key
         results: $response.queries
-  /v2/customers/configuration: {}
+  /v2/chats:
+    post:
+      deprecated: true
+      tags:
+      - Chats
+      summary: Start a chat
+      x-supported-api-key-type:
+      - QueryService
+      - Personal
+      description: Create a chat while specifying the default retrieval parameters
+        used by the prompt.
+      operationId: createChat
+      parameters:
+      - $ref: '#/components/parameters/RequestTimeout'
+      - $ref: '#/components/parameters/RequestTimeoutMillis'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              Legal:
+                summary: Start a chat to summarize arbitration clauses in a Delaware-based
+                  employment contract governed by California law
+                value:
+                  query: What are the arbitration terms in the employment contract?
+                  search:
+                    corpora:
+                    - corpus_key: legal_docs
+                      metadata_filter: doc.jurisdiction = 'Delaware' AND doc.doc_type
+                        = 'employment_contract'
+                      lexical_interpolation: 0.005
+                      limit: 50
+                    context_configuration:
+                      sentences_before: 3
+                      sentences_after: 3
+                      start_tag: <em>
+                      end_tag: </em>
+                    reranker:
+                      type: customer_reranker
+                      reranker_name: Rerank_Multilingual_v1
+                      limit: 50
+                      include_context: true
+                  generation:
+                    generation_preset_name: mockingbird-2.0
+                    prompt_template: '[{"role": "system", "content": "You are a legal
+                      analyst specializing in contract law."}, #foreach ($qResult
+                      in $vectaraQueryResults) {"role": "user", "content": "Summarize
+                      the arbitration clause in the $vectaraIdxWord[$foreach.index]
+                      contract."}, {"role": "assistant", "content": "${qResult.getText()}"},
+                      #end {"role": "user", "content": "Summarize the arbitration
+                      terms in the employment contract."}]'
+                    max_used_search_results: 15
+                    enable_factual_consistency_score: true
+                    citations:
+                      style: markdown
+                      url_pattern: https://docs.example.com/legal/{doc.id}
+                      text_pattern: '{doc.title}'
+                  chat:
+                    store: true
+                  save_history: true
+                  intelligent_query_rewriting: true
+                  stream_response: false
+              Finance:
+                summary: Initiate a chat to compare RSUs and ISOs in North American
+                  tech company equity compensation policies
+                value:
+                  query: Compare RSUs and ISOs in tech companies.
+                  search:
+                    corpora:
+                    - corpus_key: fin_docs
+                      metadata_filter: doc.region = 'North America' AND doc.comparison_type
+                        = 'rsu_vs_iso'
+                      lexical_interpolation: 0.005
+                      limit: 50
+                    context_configuration:
+                      sentences_before: 2
+                      sentences_after: 2
+                      start_tag: <mark>
+                      end_tag: </mark>
+                    reranker:
+                      type: customer_reranker
+                      reranker_name: Rerank_Multilingual_v1
+                      limit: 50
+                      include_context: true
+                  generation:
+                    generation_preset_name: mockingbird-2.0
+                    prompt_template: '[{"role": "system", "content": "You are a financial
+                      analyst specializing in equity compensation."}, #foreach ($qResult
+                      in $vectaraQueryResults) {"role": "user", "content": "Compare
+                      the $vectaraIdxWord[$foreach.index] equity type in tech policies."},
+                      {"role": "assistant", "content": "${qResult.getText()}"}, #end
+                      {"role": "user", "content": "Compare RSUs and ISOs in tech companies."}]'
+                    max_used_search_results: 10
+                    response_language: eng
+                    enable_factual_consistency_score: true
+                    citations:
+                      style: markdown
+                      url_pattern: https://docs.example.com/finance/{doc.id}
+                      text_pattern: '{doc.title}'
+                  chat:
+                    store: true
+                  save_history: true
+                  intelligent_query_rewriting: true
+                  stream_response: false
+              Support:
+                summary: Begin a chat to troubleshoot 403 errors in a web portal due
+                  to stale authentication tokens
+                value:
+                  query: How to fix 403 errors in the web portal?
+                  search:
+                    corpora:
+                    - corpus_key: support_docs
+                      metadata_filter: doc.issue = 'auth_token_stale' AND doc.platform
+                        = 'web_portal'
+                      lexical_interpolation: 0.005
+                      limit: 50
+                    context_configuration:
+                      sentences_before: 2
+                      sentences_after: 2
+                      start_tag: <em>
+                      end_tag: </em>
+                    reranker:
+                      type: customer_reranker
+                      reranker_name: Rerank_Multilingual_v1
+                      limit: 50
+                      include_context: true
+                  generation:
+                    generation_preset_name: mockingbird-2.0
+                    prompt_template: '[{"role": "system", "content": "You are a technical
+                      support specialist for web applications."}, #foreach ($qResult
+                      in $vectaraQueryResults) {"role": "user", "content": "Analyze
+                      the $vectaraIdxWord[$foreach.index] troubleshooting step for
+                      403 errors."}, {"role": "assistant", "content": "${qResult.getText()}"},
+                      #end {"role": "user", "content": "Provide a step-by-step fix
+                      for 403 errors in the web portal."}]'
+                    max_used_search_results: 15
+                    response_language: eng
+                    enable_factual_consistency_score: true
+                  chat:
+                    store: true
+                  save_history: true
+                  intelligent_query_rewriting: true
+                  stream_response: false
+      x-stream-based-on-body: streamResponse()
+      responses:
+        '200':
+          description: A response to a chat request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatFullResponse'
+              examples:
+                Legal:
+                  summary: Detailed response to a query about arbitration clauses
+                    in an employment contract, providing specifics on binding arbitration
+                    terms and including a table summarizing key clause details for
+                    a Delaware-based agreement governed by California law
+                  value:
+                    chat_id: cht_legal_8749203948
+                    turn_id: trn_8749203948
+                    answer: Clause 9.2 mandates binding arbitration through AAA with
+                      venue in Delaware and 30-day opt-out. California law governs
+                      the agreement.
+                    response_language: eng
+                    search_results:
+                    - text: Clause 9.2 of the employment contract requires binding
+                        arbitration via AAA in Delaware, with a 30-day opt-out period.
+                        The agreement is governed by California law.
+                      score: 0.94
+                      part_metadata:
+                        section: arbitration_clause
+                      document_metadata:
+                        doc_type: employment_contract
+                        jurisdiction: Delaware
+                        governing_law: California
+                      document_id: legal-memo-274
+                      table:
+                        id: legal_table_274
+                        title: Arbitration Clause Details
+                        data:
+                          headers:
+                          - - text_value: Clause
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: Description
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: Status
+                              colspan: 1
+                              rowspan: 1
+                          rows:
+                          - - text_value: Arbitration
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: Binding via AAA, Delaware venue
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: Active
+                              colspan: 1
+                              rowspan: 1
+                          - - text_value: Opt-Out
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: 30-day opt-out period
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: Active
+                              colspan: 1
+                              rowspan: 1
+                          description: Summary of arbitration terms in the employment
+                            contract, including venue and opt-out provisions.
+                      request_corpora_index: 0
+                      corpus_key: legal_docs
+                    factual_consistency_score: 0.94
+                    audio_response:
+                      audio_response: ''
+                    rendered_prompt: '[{"role": "system", "content": "You are a legal
+                      analyst."}, {"role": "user", "content": "What are the arbitration
+                      terms in the employment contract?"}, {"role": "assistant", "content":
+                      "${vectaraQueryResults[0].getText()}"}]'
+                    rephrased_query: Arbitration terms in Delaware employment contract?
+                    rewritten_queries:
+                    - corpus_key: legal_docs
+                      filter_extraction:
+                        query: Arbitration clauses in employment contracts
+                        metadata_filter: doc.jurisdiction = 'Delaware' AND doc.doc_type
+                          = 'employment_contract'
+                Finance:
+                  summary: Comprehensive response to a query about equity compensation
+                    in tech companies, comparing RSUs and ISOs with a focus on vesting
+                    schedules and tax implications, including a table outlining key
+                    differences for North American policies
+                  value:
+                    chat_id: cht_fin_2293842
+                    turn_id: trn_2293842
+                    answer: RSUs follow time-based vesting, typically over 4 years,
+                      while ISOs offer tax-advantaged treatment with a 2-year holding
+                      requirement. Recent tech company shifts favor RSUs for flexibility.
+                    response_language: eng
+                    search_results:
+                    - text: RSUs vest over 4 years, while ISOs require a 2-year holding
+                        period for tax benefits. Tech companies increasingly prefer
+                        RSUs for flexibility.
+                      score: 0.88
+                      part_metadata:
+                        section: equity_comparison
+                      document_metadata:
+                        doc_type: equity_policy
+                        comparison_type: rsu_vs_iso
+                        region: North America
+                      document_id: fin-policy-123
+                      table:
+                        id: fin_table_229
+                        title: RSU vs ISO Comparison
+                        data:
+                          headers:
+                          - - text_value: Feature
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: RSU
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: ISO
+                              colspan: 1
+                              rowspan: 1
+                          rows:
+                          - - text_value: Vesting
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: 4-year time-based
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: 2-year holding
+                              colspan: 1
+                              rowspan: 1
+                          - - text_value: Tax Treatment
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: Ordinary income
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: Capital gains
+                              colspan: 1
+                              rowspan: 1
+                          description: Comparison of vesting and tax implications
+                            for RSUs and ISOs in tech company equity policies.
+                      request_corpora_index: 0
+                      corpus_key: fin_docs
+                    factual_consistency_score: 0.88
+                    audio_response:
+                      audio_response: ''
+                    rendered_prompt: '[{"role": "system", "content": "You are a financial
+                      analyst."}, {"role": "user", "content": "Compare RSUs and ISOs
+                      in tech companies."}, {"role": "assistant", "content": "${vectaraQueryResults[0].getText()}"}]'
+                    rephrased_query: RSU vs ISO in tech equity policies?
+                    rewritten_queries:
+                    - corpus_key: fin_docs
+                      filter_extraction:
+                        query: Equity compensation in tech
+                        metadata_filter: doc.region = 'North America' AND doc.comparison_type
+                          = 'rsu_vs_iso'
+                Support:
+                  summary: In-depth response to a query about resolving 403 errors
+                    in a web portal, identifying stale token issues and JavaScript-based
+                    mitigation, with a table detailing resolution steps for Chrome
+                    users
+                  value:
+                    chat_id: cht_sup_1948323
+                    turn_id: trn_1948323
+                    answer: 403 errors stem from outdated local tokens retained after
+                      user sign-out. Issue mitigated by enforcing token purge via
+                      front-end JavaScript.
+                    response_language: eng
+                    search_results:
+                    - text: 403 errors occur due to stale local tokens after sign-out.
+                        JavaScript token purge resolves the issue on the web portal.
+                      score: 0.92
+                      part_metadata:
+                        section: troubleshooting
+                      document_metadata:
+                        issue: auth_token_stale
+                        browser: chrome
+                        platform: web_portal
+                      document_id: support-ticket-99182
+                      table:
+                        id: support_table_99182
+                        title: Token Issue Resolution Steps
+                        data:
+                          headers:
+                          - - text_value: Step
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: Action
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: Component
+                              colspan: 1
+                              rowspan: 1
+                          rows:
+                          - - text_value: '1'
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: Detect sign-out
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: JavaScript
+                              colspan: 1
+                              rowspan: 1
+                          - - text_value: '2'
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: Purge local tokens
+                              colspan: 1
+                              rowspan: 1
+                            - text_value: Browser Storage
+                              colspan: 1
+                              rowspan: 1
+                          description: Steps to mitigate 403 errors caused by stale
+                            authentication tokens in the web portal.
+                      request_corpora_index: 0
+                      corpus_key: support_docs
+                    factual_consistency_score: 0.92
+                    audio_response:
+                      audio_response: ''
+                    rendered_prompt: '[{"role": "system", "content": "You are a technical
+                      support specialist."}, {"role": "user", "content": "How to fix
+                      403 errors in the web portal?"}, {"role": "assistant", "content":
+                      "${vectaraQueryResults[0].getText()}"}]'
+                    rephrased_query: Fix 403 errors due to stale tokens in web portal?
+                    rewritten_queries:
+                    - corpus_key: support_docs
+                      filter_extraction:
+                        query: Authentication errors in web portal
+                        metadata_filter: doc.issue = 'auth_token_stale' AND doc.platform
+                          = 'web_portal'
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/ChatStreamedResponse'
+        '400':
+          description: Chat creation request was malformed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '403':
+          description: Permissions do not allow creating a chat in the corpus.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Corpus not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      x-fern-streaming:
+        format: sse
+        stream-condition: $request.stream_response
+        response:
+          description: Full response to a chat question when the result is not streamed.
+          type: object
+          properties:
+            chat_id:
+              description: If the chat response was stored, the ID of the chat.
+              type: string
+              example: cht_123456789
+            turn_id:
+              description: If the chat response was stored, the ID of the turn.
+              type: string
+              example: trn_987654321
+            answer:
+              description: The message from the chat model for the chat message.
+              type: string
+              example: EU banks in 2023 have increased carbon reduction initiatives
+                by 20%, driven by new EU regulations mandating annual emissions reporting.
+            response_language:
+              description: The language that the answer is expected to be.
+              $ref: '#/components/schemas/Language'
+              example: eng
+            search_results:
+              description: The ranked search results that the chat model used.
+              type: array
+              items:
+                $ref: '#/components/schemas/IndividualSearchResult'
+            factual_consistency_score:
+              description: Indicates the probability that the summary is factually
+                consistent with the results. The system excludes this property if
+                it encounters excessively large outputs or search results.
+              type: number
+              format: float
+            rendered_prompt:
+              description: The rendered prompt sent to the LLM. Useful when creating
+                customer `prompt_template` templates.
+              type: string
+              example: '[{"role": "system", "content": "You are an ESG analyst."},
+                {"role": "user", "content": "What are the carbon reduction initiatives
+                by EU banks in 2023?"}, {"role": "assistant", "content": "${vectaraQueryResults[0].getText()}"}]'
+            warnings:
+              description: Non-fatal warnings that occurred during request processing
+              type: array
+              items:
+                $ref: '#/components/schemas/QueryWarning'
+            rephrased_query:
+              description: View the actual query made to backend that was rephrased
+                by the LLM from the input query.
+              type: string
+              example: Carbon reduction efforts by EU banks in 2023?
+            rewritten_queries:
+              description: The rewritten queries for the corpora that were searched.
+                Only populated when intelligent_query_rewriting is enabled.
+              type: array
+              items:
+                $ref: '#/components/schemas/RewrittenQuery'
+              example:
+              - corpus_key: fin_docs
+                filter_extraction:
+                  query: ESG compliance trends in EU
+                  metadata_filter: doc.industry = 'banking' AND doc.year = 2023
+              - corpus_key: legal_docs
+                filter_extraction:
+                  query: ESG regulations for EU banks 2023
+                  metadata_filter: doc.jurisdiction = 'EU' AND doc.year = 2023
+        response-stream:
+          description: An individual event when the response is streamed.
+          type: object
+          discriminator:
+            propertyName: type
+            mapping:
+              search_results: '#/components/schemas/StreamSearchResponse'
+              chat_info: '#/components/schemas/ChatInfoResponse'
+              generation_chunk: '#/components/schemas/StreamGenerationChunk'
+              generation_end: '#/components/schemas/StreamGenerationEnd'
+              generation_info: '#/components/schemas/GenerationInfo'
+              factual_consistency_score: '#/components/schemas/FactualConsistencyScore'
+              end: '#/components/schemas/StreamResponseEnd'
+              error: '#/components/schemas/StreamError'
+          oneOf:
+          - $ref: '#/components/schemas/StreamSearchResponse'
+          - $ref: '#/components/schemas/ChatInfoResponse'
+          - $ref: '#/components/schemas/StreamGenerationChunk'
+          - $ref: '#/components/schemas/StreamGenerationEnd'
+          - $ref: '#/components/schemas/GenerationInfo'
+          - $ref: '#/components/schemas/FactualConsistencyScore'
+          - $ref: '#/components/schemas/StreamResponseEnd'
+          - $ref: '#/components/schemas/StreamError'
+      x-fern-sdk-method-name: create
+      x-fern-examples:
+      - name: Batch
+        request:
+          stream_response: false
+          query: What is a hallucination?
+          search:
+            corpora:
+            - corpus_key: corpus_key
+              metadata_filter: ''
+              lexical_interpolation: 0.005
+            context_configuration:
+              sentences_before: 2
+              sentences_after: 2
+            reranker:
+              type: customer_reranker
+              reranker_id: rnk_272725719
+          generation:
+            response_language: eng
+            enable_factual_consistency_score: true
+            citations:
+              style: none
+          chat:
+            store: true
+        response:
+          body: {}
+      - name: Stream
+        request:
+          stream_response: true
+          query: What is a hallucination?
+          search:
+            corpora:
+            - corpus_key: corpus_key
+              metadata_filter: ''
+              lexical_interpolation: 0.005
+            context_configuration:
+              sentences_before: 2
+              sentences_after: 2
+            reranker:
+              type: customer_reranker
+              reranker_id: rnk_272725719
+          generation:
+            response_language: eng
+            citations:
+              style: none
+            enable_factual_consistency_score: true
+          chat:
+            store: true
+        response:
+          stream: []
+      x-fern-sdk-group-name: chats
+    get:
+      deprecated: true
+      tags:
+      - Chats
+      summary: List chats
+      x-supported-api-key-type:
+      - QueryService
+      - Personal
+      description: Retrieve a list of previous chats in the Vectara account.
+      operationId: listChats
+      parameters:
+      - $ref: '#/components/parameters/RequestTimeout'
+      - $ref: '#/components/parameters/RequestTimeoutMillis'
+      - in: query
+        name: limit
+        description: The maximum number of results to return in the list.
+        schema:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 10000
+          default: 1000
+      - in: query
+        name: page_key
+        description: Used to retrieve the next page of chats after the limit has been
+          reached.
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: List of chats.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListChatsResponse'
+        '403':
+          description: Permissions do not allow listing chats.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Corpus not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      x-fern-sdk-group-name: chats
+      x-fern-sdk-method-name: list
+      x-fern-pagination:
+        cursor: $request.page_key
+        next_cursor: $response.metadata.page_key
+        results: $response.chats
+  /v2/chats/{chat_id}:
+    get:
+      deprecated: true
+      tags:
+      - Chats
+      summary: Get a chat
+      x-supported-api-key-type:
+      - QueryService
+      - Personal
+      description: Get a chat summary to view what started the chat, but not subsequent
+        turns.
+      operationId: getChat
+      parameters:
+      - $ref: '#/components/parameters/RequestTimeout'
+      - $ref: '#/components/parameters/RequestTimeoutMillis'
+      - in: path
+        name: chat_id
+        description: The ID of the chat.
+        required: true
+        schema:
+          type: string
+          pattern: cht_.+$
+      responses:
+        '200':
+          description: A chat.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chat'
+        '403':
+          description: Permissions do not allow retrieving the chat.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Corpus or chat not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      x-fern-sdk-group-name: chats
+      x-fern-sdk-method-name: get
+    delete:
+      deprecated: true
+      tags:
+      - Chats
+      summary: Delete a chat
+      x-supported-api-key-type:
+      - Personal
+      description: Delete a chat and any turns it contains permanently.
+      operationId: deleteChat
+      parameters:
+      - $ref: '#/components/parameters/RequestTimeout'
+      - $ref: '#/components/parameters/RequestTimeoutMillis'
+      - in: path
+        name: chat_id
+        description: The ID of the chat.
+        required: true
+        schema:
+          type: string
+          pattern: cht_.+$
+      responses:
+        '204':
+          description: Successfully deleted the chat.
+        '403':
+          description: Permissions do not allow deleting the chat.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Corpus or chat not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      x-fern-sdk-group-name: chats
+      x-fern-sdk-method-name: delete
+  /v2/chats/{chat_id}/turns:
+    post:
+      deprecated: true
+      tags:
+      - Chats
+      summary: Create a new turn in the chat
+      x-supported-api-key-type:
+      - QueryService
+      - Personal
+      description: Create a new turn in the chat. Each conversation has a series of
+        `turn` objects, which are the sequence of message and response pairs that
+        make up the dialog.
+      operationId: createChatTurn
+      parameters:
+      - $ref: '#/components/parameters/RequestTimeout'
+      - $ref: '#/components/parameters/RequestTimeoutMillis'
+      - in: path
+        name: chat_id
+        description: The ID of the chat.
+        required: true
+        schema:
+          type: string
+          pattern: cht_.+$
+      requestBody:
+        content:
+          application/json:
+            examples:
+              Legal:
+                summary: Clarify difference from standard non-compete language
+                value:
+                  query: How does this clause compare to our standard non-compete
+                    template?
+                  generation:
+                    response_language: eng
+                  search:
+                    corpora:
+                    - corpus_key: legal_docs
+                    metadataFilter: doc.clause_type = 'non_compete'
+              Finance:
+                summary: Follow-up on ISO early exercise benefits
+                value:
+                  query: If I early exercise ISOs, how does that affect AMT?
+                  generation:
+                    response_language: eng
+                  search:
+                    corpora:
+                    - corpus_key: fin_docs
+                    metadataFilter: doc.type = 'tax_policy'
+              Support:
+                summary: "Ask why token refresh didn\u2019t resolve issue"
+                value:
+                  query: Why did refreshing the token not fix the login problem for
+                    some users?
+                  search:
+                    corpora:
+                    - corpus_key: support_kb
+                    metadataFilter: doc.platform = 'web_portal' AND doc.error_code
+                      = '403'
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      x-stream-based-on-body: streamResponse()
+      responses:
+        '200':
+          description: A response to a chat request.
+          content:
+            application/json:
+              examples:
+                Legal:
+                  summary: Comparison to standard non-compete clause
+                  value:
+                    summary: This clause lacks a clear duration and omits geographical
+                      scope, which are present in your standard template. Legal enforceability
+                      may vary by state.
+                    summary_factual_consistency_score: 0.93
+                Finance:
+                  summary: ISO early exercise and AMT implications
+                  value:
+                    summary: Exercising early can reduce the AMT impact if shares
+                      are held for >1 year and not sold during that time. Form 6251
+                      applies for AMT calculations.
+                    summary_factual_consistency_score: 0.9
+                Support:
+                  summary: Token refresh failure root cause
+                  value:
+                    summary: Users affected had expired refresh tokens due to silent
+                      authentication failures. Recommend forcing a full logout and
+                      re-authentication cycle.
+                    summary_factual_consistency_score: 0.89
+              schema:
+                $ref: '#/components/schemas/ChatFullResponse'
+            text/event-stream:
+              schema:
+                $ref: '#/components/schemas/ChatStreamedResponse'
+        '400':
+          description: Turn creation request was malformed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '403':
+          description: Permissions do not allow creating a turn in the chat.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Corpus or chat not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      x-fern-streaming:
+        format: sse
+        stream-condition: $request.stream_response
+        response:
+          description: Full response to a chat question when the result is not streamed.
+          type: object
+          properties:
+            chat_id:
+              description: If the chat response was stored, the ID of the chat.
+              type: string
+              example: cht_123456789
+            turn_id:
+              description: If the chat response was stored, the ID of the turn.
+              type: string
+              example: trn_987654321
+            answer:
+              description: The message from the chat model for the chat message.
+              type: string
+              example: EU banks in 2023 have increased carbon reduction initiatives
+                by 20%, driven by new EU regulations mandating annual emissions reporting.
+            response_language:
+              description: The language that the answer is expected to be.
+              $ref: '#/components/schemas/Language'
+              example: eng
+            search_results:
+              description: The ranked search results that the chat model used.
+              type: array
+              items:
+                $ref: '#/components/schemas/IndividualSearchResult'
+            factual_consistency_score:
+              description: Indicates the probability that the summary is factually
+                consistent with the results. The system excludes this property if
+                it encounters excessively large outputs or search results.
+              type: number
+              format: float
+            rendered_prompt:
+              description: The rendered prompt sent to the LLM. Useful when creating
+                customer `prompt_template` templates.
+              type: string
+              example: '[{"role": "system", "content": "You are an ESG analyst."},
+                {"role": "user", "content": "What are the carbon reduction initiatives
+                by EU banks in 2023?"}, {"role": "assistant", "content": "${vectaraQueryResults[0].getText()}"}]'
+            warnings:
+              description: Non-fatal warnings that occurred during request processing
+              type: array
+              items:
+                $ref: '#/components/schemas/QueryWarning'
+            rephrased_query:
+              description: View the actual query made to backend that was rephrased
+                by the LLM from the input query.
+              type: string
+              example: Carbon reduction efforts by EU banks in 2023?
+            rewritten_queries:
+              description: The rewritten queries for the corpora that were searched.
+                Only populated when intelligent_query_rewriting is enabled.
+              type: array
+              items:
+                $ref: '#/components/schemas/RewrittenQuery'
+              example:
+              - corpus_key: fin_docs
+                filter_extraction:
+                  query: ESG compliance trends in EU
+                  metadata_filter: doc.industry = 'banking' AND doc.year = 2023
+              - corpus_key: legal_docs
+                filter_extraction:
+                  query: ESG regulations for EU banks 2023
+                  metadata_filter: doc.jurisdiction = 'EU' AND doc.year = 2023
+        response-stream:
+          description: An individual event when the response is streamed.
+          type: object
+          discriminator:
+            propertyName: type
+            mapping:
+              search_results: '#/components/schemas/StreamSearchResponse'
+              chat_info: '#/components/schemas/ChatInfoResponse'
+              generation_chunk: '#/components/schemas/StreamGenerationChunk'
+              generation_end: '#/components/schemas/StreamGenerationEnd'
+              generation_info: '#/components/schemas/GenerationInfo'
+              factual_consistency_score: '#/components/schemas/FactualConsistencyScore'
+              end: '#/components/schemas/StreamResponseEnd'
+              error: '#/components/schemas/StreamError'
+          oneOf:
+          - $ref: '#/components/schemas/StreamSearchResponse'
+          - $ref: '#/components/schemas/ChatInfoResponse'
+          - $ref: '#/components/schemas/StreamGenerationChunk'
+          - $ref: '#/components/schemas/StreamGenerationEnd'
+          - $ref: '#/components/schemas/GenerationInfo'
+          - $ref: '#/components/schemas/FactualConsistencyScore'
+          - $ref: '#/components/schemas/StreamResponseEnd'
+          - $ref: '#/components/schemas/StreamError'
+      x-fern-sdk-group-name: chats
+      x-fern-sdk-method-name: createTurns
+    get:
+      deprecated: true
+      tags:
+      - Chats
+      summary: List turns in a chat
+      x-supported-api-key-type:
+      - QueryService
+      - Personal
+      description: List all turns in a chat to see all message and response pairs
+        that make up the dialog.
+      operationId: listChatTurns
+      parameters:
+      - $ref: '#/components/parameters/RequestTimeout'
+      - $ref: '#/components/parameters/RequestTimeoutMillis'
+      - in: path
+        name: chat_id
+        description: The ID of the chat.
+        required: true
+        example: cht_1234567890
+        schema:
+          type: string
+          pattern: cht_.+$
+      responses:
+        '200':
+          description: List of turns.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListChatTurnsResponse'
+        '403':
+          description: Permissions do not allow listing turns in the chat.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Corpus or chat not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      x-fern-sdk-group-name: chats
+      x-fern-sdk-method-name: listTurns
+  /v2/chats/{chat_id}/turns/{turn_id}:
+    get:
+      deprecated: true
+      tags:
+      - Chats
+      summary: Get a turn
+      x-supported-api-key-type:
+      - QueryService
+      - Personal
+      description: Get a specific turn from a chat, which is a message and response
+        pair from the conversation.
+      operationId: getChatTurn
+      parameters:
+      - $ref: '#/components/parameters/RequestTimeout'
+      - $ref: '#/components/parameters/RequestTimeoutMillis'
+      - in: path
+        name: chat_id
+        description: The ID of the chat.
+        required: true
+        schema:
+          type: string
+          pattern: cht_.+$
+      - in: path
+        name: turn_id
+        description: The ID of the turn.
+        required: true
+        schema:
+          type: string
+          pattern: trn_.+$
+      responses:
+        '200':
+          description: The turn.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turn'
+        '403':
+          description: Permissions do not allow getting the turn.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Corpus, chat, or turn not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      x-fern-sdk-group-name: chats
+      x-fern-sdk-method-name: getTurn
+    delete:
+      deprecated: true
+      tags:
+      - Chats
+      summary: Delete a turn
+      x-supported-api-key-type:
+      - Personal
+      description: Delete a turn from a chat. This will delete all subsequent turns
+        in the chat.
+      operationId: deleteChatTurn
+      parameters:
+      - $ref: '#/components/parameters/RequestTimeout'
+      - $ref: '#/components/parameters/RequestTimeoutMillis'
+      - in: path
+        name: chat_id
+        description: The ID of the chat.
+        required: true
+        schema:
+          type: string
+          pattern: cht_.+$
+      - in: path
+        name: turn_id
+        description: The ID of the turn.
+        required: true
+        schema:
+          type: string
+          pattern: trn_.+$
+      responses:
+        '204':
+          description: Successfully deleted a turn.
+        '403':
+          description: Permissions do not allow deleting the turn.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Corpus, chat, or turn not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      x-fern-sdk-group-name: chats
+      x-fern-sdk-method-name: deleteTurn
+    patch:
+      deprecated: true
+      tags:
+      - Chats
+      summary: Update a turn
+      x-supported-api-key-type:
+      - Personal
+      description: Update a turn; used to disable or enable a chat.
+      operationId: updateChatTurn
+      parameters:
+      - $ref: '#/components/parameters/RequestTimeout'
+      - $ref: '#/components/parameters/RequestTimeoutMillis'
+      - in: path
+        name: chat_id
+        description: The ID of the chat.
+        required: true
+        example: cht_1234567890
+        schema:
+          type: string
+          pattern: cht_.+$
+      - in: path
+        name: turn_id
+        description: The ID of the turn.
+        required: true
+        example: trn_987654321
+        schema:
+          type: string
+          pattern: trn_.+$
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTurnRequest'
+      responses:
+        '200':
+          description: Successfully modified the turn.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turn'
+        '403':
+          description: Permissions do not allow updating the turn.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Corpus, chat, or turn not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      x-fern-sdk-group-name: chats
+      x-fern-sdk-method-name: updateTurn
   /v2/llms:
     post:
       tags:
@@ -7251,6 +8317,9 @@ paths:
               message:
                 contentType: text/plain
                 style: form
+              messages:
+                contentType: application/json
+                style: form
               files:
                 contentType: '*/*'
                 style: form
@@ -7376,9 +8445,15 @@ paths:
               context_consumed: '#/components/schemas/ContextConsumedEvent'
               compaction_started: '#/components/schemas/CompactionStartedEvent'
               compaction: '#/components/schemas/CompactionEvent'
+              skill_load: '#/components/schemas/SkillLoadEvent'
+              thinking: '#/components/schemas/ThinkingEvent'
+              artifact_upload: '#/components/schemas/ArtifactUploadEvent'
               error: '#/components/schemas/StreamError'
               end: '#/components/schemas/StreamResponseEnd'
           oneOf:
+          - $ref: '#/components/schemas/SkillLoadEvent'
+          - $ref: '#/components/schemas/ThinkingEvent'
+          - $ref: '#/components/schemas/ArtifactUploadEvent'
           - $ref: '#/components/schemas/InputMessageEvent'
           - $ref: '#/components/schemas/StreamingAgentOutput'
           - $ref: '#/components/schemas/StreamingAgentOutputEnd'
@@ -8128,11 +9203,118 @@ paths:
         cursor: $request.page_key
         next_cursor: $response.metadata.page_key
         results: $response.executions
-  /v2/pipelines: {}
-  /v2/pipelines/{pipeline_key}: {}
-  /v2/pipelines/{pipeline_key}/trigger: {}
-  /v2/pipelines/{pipeline_key}/runs: {}
-  /v2/pipelines/{pipeline_key}/runs/{run_id}: {}
+  /v2/agents/{agent_key}/identity:
+    get:
+      tags:
+      - Agent Identity
+      summary: Get agent identity
+      x-supported-api-key-type:
+      - Personal
+      description: 'Retrieve the identity associated with an agent. The identity is
+        the service account the agent uses when executing tools.
+
+
+        In `auto` mode (the default), the platform keeps the identity''s roles in
+        sync with the agent''s tool configuration.
+
+
+        In `manual` mode, the roles are frozen and the platform will not modify them
+        when the agent is updated.
+
+        '
+      operationId: getAgentIdentity
+      parameters:
+      - $ref: '#/components/parameters/RequestTimeout'
+      - $ref: '#/components/parameters/RequestTimeoutMillis'
+      - in: path
+        name: agent_key
+        description: The unique key of the agent.
+        required: true
+        schema:
+          $ref: '#/components/schemas/AgentKey'
+      responses:
+        '200':
+          description: The agent's identity details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentIdentity'
+        '403':
+          description: Permissions do not allow accessing this agent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Agent not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      x-fern-sdk-group-name: agents
+      x-fern-sdk-method-name: getIdentity
+    patch:
+      tags:
+      - Agent Identity
+      summary: Update agent identity
+      x-supported-api-key-type:
+      - Personal
+      description: 'Update the agent''s identity role management mode and/or roles.
+
+
+        Setting mode to `manual` freezes the current roles. The platform will no longer
+        recompute roles when the agent''s tool configuration changes. This is useful
+        when you need to grant the agent additional permissions beyond what its tools
+        require.
+
+
+        Setting mode to `auto` resumes platform-managed roles. The platform will immediately
+        resync the roles to match the current tool configuration.
+
+        '
+      operationId: updateAgentIdentity
+      parameters:
+      - $ref: '#/components/parameters/RequestTimeout'
+      - $ref: '#/components/parameters/RequestTimeoutMillis'
+      - in: path
+        name: agent_key
+        description: The unique key of the agent.
+        required: true
+        schema:
+          $ref: '#/components/schemas/AgentKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAgentIdentityRequest'
+      responses:
+        '200':
+          description: The updated agent identity.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentIdentity'
+        '400':
+          description: Invalid request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
+        '403':
+          description: Permissions do not allow modifying this agent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Agent not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFoundError'
+      x-fern-sdk-group-name: agents
+      x-fern-sdk-method-name: updateIdentity
 components:
   parameters:
     RequestTimeout:
@@ -11223,37 +12405,6 @@ components:
             and all subsequent turns. Enabling a turn is not implemented.
           type: boolean
           example: false
-    CustomerConfiguration:
-      type: object
-      description: Customer configuration.
-      required:
-      - customer_id
-      - operational_status
-      properties:
-        customer_id:
-          description: The unique identifier of the customer.
-          type: integer
-          format: int64
-          example: 1234567890
-        operational_status:
-          description: The operational status of the customer account.
-          type: string
-          enum:
-          - ACTIVE
-          - MARKED_FOR_DELETION
-          - DELETED
-          - EXPIRED
-          example: ACTIVE
-    ListCustomerConfigurationsResponse:
-      type: object
-      description: Response containing a list of customer configurations.
-      required:
-      - configurations
-      properties:
-        configurations:
-          type: array
-          items:
-            $ref: '#/components/schemas/CustomerConfiguration'
     LLMCapabilities:
       description: Capabilities of a Large Language Model.
       type: object
@@ -12696,6 +13847,8 @@ components:
       - agent_user
       - pipeline_administrator
       - pipeline_viewer
+      - viewer
+      - corpus_viewer
     CorpusRole:
       description: Corpus-specific role assignment.
       type: object
@@ -13330,23 +14483,6 @@ components:
 
         '
       type: string
-    ToolPermissions:
-      description: The permissions that will be granted to the agent's dedicated service
-        account when this tool is added to an agent.
-      type: object
-      properties:
-        corpora_query:
-          description: When true, the tool grants query permissions on corpora specified
-            in its configuration.
-          type: boolean
-        corpora_index:
-          description: When true, the tool grants index permissions on corpora specified
-            in its configuration.
-          type: boolean
-        corpus_developer:
-          description: When true, the tool grants corpus developer permissions, allowing
-            the agent to list available corpora.
-          type: boolean
     ToolBase:
       description: Base properties shared by all tool types.
       type: object
@@ -13409,10 +14545,6 @@ components:
             type: string
           example:
           - document_ingestion
-        permissions:
-          description: The permissions granted to the agent's service account when
-            this tool is added to an agent.
-          $ref: '#/components/schemas/ToolPermissions'
       required:
       - id
       - name
@@ -13668,23 +14800,6 @@ components:
         - function_definition
       x-vectaraParents:
       - Tool
-    StructuredIndexingTool:
-      description: A tool that indexes structured documents into the Vectara platform
-        with full control over document structure, sections, metadata, tables, and
-        images.
-      allOf:
-      - $ref: '#/components/schemas/ToolBase'
-      - type: object
-        properties:
-          type:
-            description: This should always be `structured_indexing`.
-            type: string
-            default: structured_indexing
-            example: structured_indexing
-        required:
-        - type
-      x-vectaraParents:
-      - Tool
     SubAgentTool:
       description: 'A tool that spawns a specialized sub-agent to handle complex,
         multi-step tasks autonomously.
@@ -13816,7 +14931,6 @@ components:
           web_search: '#/components/schemas/WebSearchTool'
           web_get: '#/components/schemas/WebGetTool'
           lambda: '#/components/schemas/LambdaTool'
-          structured_indexing: '#/components/schemas/StructuredIndexingTool'
           sub_agent: '#/components/schemas/SubAgentTool'
           artifact_create: '#/components/schemas/ArtifactCreateTool'
           artifact_read: '#/components/schemas/ArtifactReadTool'
@@ -13831,7 +14945,6 @@ components:
       - $ref: '#/components/schemas/WebSearchTool'
       - $ref: '#/components/schemas/WebGetTool'
       - $ref: '#/components/schemas/LambdaTool'
-      - $ref: '#/components/schemas/StructuredIndexingTool'
       - $ref: '#/components/schemas/SubAgentTool'
       - $ref: '#/components/schemas/ArtifactCreateTool'
       - $ref: '#/components/schemas/ArtifactReadTool'
@@ -14350,937 +15463,6 @@ components:
       oneOf:
       - $ref: '#/components/schemas/TestToolSuccessResponse'
       - $ref: '#/components/schemas/TestToolErrorResponse'
-    ToolConfigurationId:
-      description: Unique identifier for a tool configuration.
-      type: string
-      pattern: ^tcf_.*
-      example: tcf_123e4567-e89b-12d3-a456-426614174000
-    ToolConfigurationName:
-      description: The human-readable name of a tool configuration.
-      type: string
-      minLength: 1
-      maxLength: 50
-      example: Customer Support Search Config
-    ToolConfigurationBase:
-      description: Base properties shared by all tool configuration types.
-      type: object
-      properties:
-        id:
-          $ref: '#/components/schemas/ToolConfigurationId'
-        name:
-          $ref: '#/components/schemas/ToolConfigurationName'
-        description:
-          description: A detailed description of what this tool configuration is for
-            and how it should be used.
-          type: string
-          example: Configuration for searching customer support documentation with
-            optimized parameters
-        description_template:
-          $ref: '#/components/schemas/ToolDescriptionTemplate'
-        version:
-          description: The version identifier for this tool configuration. This is
-            automatically incremented when the configuration is updated.
-          type: integer
-          minimum: 1
-          example: 1
-        enabled:
-          description: Whether the tool configuration is currently enabled and available
-            for use.
-          type: boolean
-          default: true
-        metadata:
-          description: Optional metadata associated with this tool configuration.
-          type: object
-          additionalProperties: true
-          example:
-            tags:
-            - production
-            - v2
-            owner: team-platform
-        created_at:
-          description: Timestamp when the tool configuration was created.
-          type: string
-          format: date-time
-        updated_at:
-          description: Timestamp when the tool configuration was last updated.
-          type: string
-          format: date-time
-      required:
-      - id
-      - version
-    DynamicVectaraToolConfiguration:
-      description: 'A configuration for built-in Vectara tools that have implementations
-        within the platform but do not have a dedicated configuration type schema.
-        Use the List Tools endpoint to discover available tools and obtain the `tool_id`
-        required when creating this configuration.
-
-        '
-      allOf:
-      - $ref: '#/components/schemas/ToolConfigurationBase'
-      - type: object
-        properties:
-          type:
-            description: This should always be `dynamic_vectara`.
-            type: string
-            default: dynamic_vectara
-            example: dynamic_vectara
-          argument_override:
-            description: "Optional hardcoded arguments for tool calls. The key specifies\
-              \ the location in the tool arguments to overide, and the value specifies\
-              \ what to override with. The LLM will not be able to change the parameters,\
-              \ nor know those values exist within the tool.\n\nThe values can also\
-              \ be dynamic references to context values using $ref with dot notation\
-              \ path syntax:\n- Static value: \"fixed_value\" or 123\n- Dynamic reference:\
-              \ `{\"$ref\": \"session.metadata.field_name\"}`\n\nReferences are resolved\
-              \ at runtime from context:\n- session.metadata.* - Access session metadata\
-              \ fields\n- agent.metadata.* - Access agent metadata fields\n\nExample:\n\
-              \  `{\"query\": {\"$ref\": \".session.metadata.query\"}}`\n\nIf you\
-              \ want to have a real value `\"$ref\"` use `\"$$ref\"`, that is you\
-              \ can escape the first $ by using $$."
-            type: object
-            additionalProperties: true
-            example:
-              custom_param: value
-              max_results: 10
-        required:
-        - type
-      x-vectaraParents:
-      - ToolConfiguration
-    McpToolConfiguration:
-      description: A reusable configuration for an MCP tool that stores predefined
-        argument overrides and settings.
-      allOf:
-      - $ref: '#/components/schemas/ToolConfigurationBase'
-      - type: object
-        properties:
-          type:
-            description: This should always be `mcp`.
-            type: string
-            default: mcp
-            example: mcp
-          argument_override:
-            description: "Optional hardcoded arguments for tool calls. The key specifies\
-              \ the location in the tool arguments to overide, and the value specifies\
-              \ what to override with. The LLM will not be able to change the parameters,\
-              \ nor know those values exist within the tool.\n\nThe values can also\
-              \ be dynamic references to context values using $ref with dot notation\
-              \ path syntax:\n- Static value: \"fixed_value\" or 123\n- Dynamic reference:\
-              \ `{\"$ref\": \"session.metadata.field_name\"}`\n\nReferences are resolved\
-              \ at runtime from context:\n- session.metadata.* - Access session metadata\
-              \ fields\n- agent.metadata.* - Access agent metadata fields\n\nExample:\n\
-              \  `{\"query\": {\"$ref\": \".session.metadata.query\"}}`\n\nIf you\
-              \ want to have a real value `\"$ref\"` use `\"$$ref\"`, that is you\
-              \ can escape the first $ by using $$."
-            type: object
-            additionalProperties: true
-            example:
-              custom_param: value
-              max_results: 10
-        required:
-        - type
-      x-vectaraParents:
-      - ToolConfiguration
-    CorporaSearchToolParameters:
-      description: LLM-exposed parameters for the corpora search tool that can be
-        filled in during execution.
-      type: object
-      properties:
-        query:
-          description: The search query string, which is the question the user is
-            asking. If not provided, will be filled in by the agent.
-          type: string
-          maxLength: 5000
-          example: Am I allowed to bring pets to work?
-      additionalProperties: false
-    EagerReference:
-      title: EagerReference
-      description: A reference to a value resolved from the session context at the
-        start of each turn. Resolution occurs when a new message is submitted to the
-        agent session, before any LLM processing begins. The resolved value remains
-        constant throughout the turn and is not re-evaluated during the agent's response
-        or subsequent tool calls within the same turn.
-      type: object
-      x-vectaraParents:
-      - AgentKeyedSearchCorpusCorpusKey
-      - AgentKeyedSearchCorpusMetadataFilter
-      properties:
-        $ref:
-          type: string
-          description: A dot-notation path to the value in the session context.
-          example: session.metadata.filters.user_access
-      required:
-      - $ref
-      additionalProperties: false
-    AgentKeyedSearchCorpus:
-      title: AgentKeyedSearchCorpus
-      description: Agent-specific keyed search corpus that supports eager references
-        for corpus_key and metadata_filter.
-      type: object
-      properties:
-        corpus_key:
-          description: 'The corpus to search. Can be either a static string (e.g.
-            "my-corpus") or an EagerReference object (e.g. {"$ref": "session.metadata.corpus"}).
-            When an EagerReference is provided, the $ref path is resolved from the
-            session context at the start of each turn, before LLM processing begins.'
-          oneOf:
-          - type: string
-          - $ref: '#/components/schemas/EagerReference'
-        custom_dimensions:
-          allOf:
-          - $ref: '#/components/schemas/CustomDimensions'
-          nullable: true
-          default: null
-        metadata_filter:
-          description: 'The filter to narrow search results. Can be either a static
-            string (e.g. "doc.department = ''engineering''") or an EagerReference
-            object (e.g. {"$ref": "session.metadata.filters.user"}). When an EagerReference
-            is provided, the $ref path is resolved from the session context at the
-            start of each turn, before LLM processing begins.'
-          oneOf:
-          - type: string
-          - $ref: '#/components/schemas/EagerReference'
-        lexical_interpolation:
-          description: How much to weigh lexical scores compared to the embedding
-            score. 0 means lexical search is not used at all, and 1 means only lexical
-            search is used.
-          type: number
-          format: float
-          minimum: 0
-          maximum: 1
-          default: 0.025
-        semantics:
-          allOf:
-          - $ref: '#/components/schemas/SearchSemantics'
-          default: default
-        query:
-          description: Query override for this specific corpus.
-          type: string
-          maxLength: 5000
-      required:
-      - corpus_key
-    AgentSearchCorporaParameters:
-      title: AgentSearchCorporaParameters
-      description: Agent-specific search parameters that support eager references.
-      type: object
-      properties:
-        corpora:
-          description: The corpora to search, with support for eager references.
-          type: array
-          items:
-            $ref: '#/components/schemas/AgentKeyedSearchCorpus'
-          minItems: 1
-        offset:
-          description: Number of results to skip for pagination.
-          type: integer
-          format: int32
-          minimum: 0
-          default: 0
-        limit:
-          description: Maximum number of results to return.
-          type: integer
-          format: int32
-          minimum: 1
-          default: 10
-        context_configuration:
-          allOf:
-          - $ref: '#/components/schemas/ContextConfiguration'
-          nullable: true
-          default: null
-        reranker:
-          $ref: '#/components/schemas/SearchReranker'
-    AgentCorporaSearchQueryConfiguration:
-      title: AgentCorporaSearchQueryConfiguration
-      description: Agent-specific query configuration that supports eager references.
-        Use this in agent tool configurations when turn-start resolution is needed.
-      type: object
-      properties:
-        search:
-          $ref: '#/components/schemas/AgentSearchCorporaParameters'
-        generation:
-          allOf:
-          - $ref: '#/components/schemas/GenerationParameters'
-          default:
-            enabled: false
-        save_history:
-          description: Whether to save the query to history.
-          type: boolean
-          default: false
-      required:
-      - search
-    CorporaSearchToolConfiguration:
-      description: A reusable configuration for a corpora search tool that stores
-        predefined search parameters and overrides.
-      allOf:
-      - $ref: '#/components/schemas/ToolConfigurationBase'
-      - type: object
-        properties:
-          type:
-            description: This should always be `corpora_search`.
-            type: string
-            default: corpora_search
-            example: corpora_search
-          argument_override:
-            description: Optional hardcoded arguments for tool calls. When specified,
-              these values will be used instead of allowing the LLM to fill in those
-              parameters.
-            $ref: '#/components/schemas/CorporaSearchToolParameters'
-          query_configuration:
-            description: User-configurable settings for the search that are not exposed
-              to the LLM. Supports dynamic references using $ref syntax.
-            $ref: '#/components/schemas/AgentCorporaSearchQueryConfiguration'
-        required:
-        - type
-        - query_configuration
-      x-vectaraParents:
-      - ToolConfiguration
-    WebSearchToolParameters:
-      description: Configurable parameters for the web search tool. If not provided,
-        will be filled in by the agent.
-      type: object
-      properties:
-        query:
-          description: The search query to execute.
-          type: string
-          example: latest AI developments 2024
-        limit:
-          description: Maximum number of results to return.
-          type: integer
-          minimum: 1
-          maximum: 20
-          example: 10
-        provider:
-          description: Search provider to use.
-          type: string
-          enum:
-          - tavily
-          example: tavily
-        include_domains:
-          description: List of domains to specifically include in search results.
-            When specified, results will ONLY come from these domains. Supports exact
-            domains (e.g., "github.com"), subdomains (e.g., "docs.github.com"), and
-            wildcard patterns (e.g., "*.github.com"). Subpaths are not supported.
-          type: array
-          items:
-            type: string
-          maxItems: 50
-          example:
-          - github.com
-          - docs.github.com
-          - '*.stackoverflow.com'
-        exclude_domains:
-          description: List of domains to specifically exclude from search results.
-            Supports exact domains (e.g., "spam.com"), subdomains (e.g., "bad.spam.com"),
-            and wildcard patterns (e.g., "*.spam.com"). Subpaths are not supported.
-          type: array
-          items:
-            type: string
-          maxItems: 50
-          example:
-          - spam.com
-          - unreliable-source.com
-      additionalProperties: false
-    WebSearchToolConfiguration:
-      description: A reusable configuration for a web search tool that stores predefined
-        search parameters and settings.
-      allOf:
-      - $ref: '#/components/schemas/ToolConfigurationBase'
-      - type: object
-        properties:
-          type:
-            description: This should always be `web_search`.
-            type: string
-            default: web_search
-            example: web_search
-          argument_override:
-            description: Optional hardcoded arguments for tool calls. When specified,
-              these values will be used instead of allowing the LLM to fill in those
-              parameters.
-            $ref: '#/components/schemas/WebSearchToolParameters'
-        required:
-        - type
-      x-vectaraParents:
-      - ToolConfiguration
-    LambdaToolConfiguration:
-      description: A reusable configuration for a Lambda tool that executes user-defined
-        functions in a sandboxed environment.
-      allOf:
-      - $ref: '#/components/schemas/ToolConfigurationBase'
-      - type: object
-        properties:
-          type:
-            description: This should always be `lambda`.
-            type: string
-            default: lambda
-            example: lambda
-          argument_override:
-            description: "Optional hardcoded arguments for tool calls. The key specifies\
-              \ the location in the tool arguments to overide, and the value specifies\
-              \ what to override with. The LLM will not be able to change the parameters,\
-              \ nor know those values exist within the tool.\n\nThe values can also\
-              \ be dynamic references to context values using $ref with dot notation\
-              \ path syntax:\n- Static value: \"fixed_value\" or 123\n- Dynamic reference:\
-              \ `{\"$ref\": \"session.metadata.field_name\"}`\n\nReferences are resolved\
-              \ at runtime from context:\n- session.metadata.* - Access session metadata\
-              \ fields\n- agent.metadata.* - Access agent metadata fields\n\nExample:\n\
-              \  `{\"query\": {\"$ref\": \".session.metadata.query\"}}`\n\nIf you\
-              \ want to have a real value `\"$ref\"` use `\"$$ref\"`, that is you\
-              \ can escape the first $ by using $$."
-            type: object
-            additionalProperties: true
-            example:
-              connection_string: postgresql://prod-db:5432/analytics
-              max_retries: 3
-        required:
-        - type
-      x-vectaraParents:
-      - ToolConfiguration
-    StructuredIndexingToolParameters:
-      description: LLM-exposed parameters for the structured indexing tool that indexes
-        documents into the Vectara platform and can be filled in during execution.
-      type: object
-      properties:
-        corpus_key:
-          description: The key identifying the target corpus for document indexing.
-            If not provided, will be filled in by the agent.
-          type: string
-          example: my-knowledge-base
-        document_id:
-          description: The unique identifier for the document within the corpus, preferably
-            human readable IDs.
-          type: string
-          example: annual_report_2024
-        title:
-          description: The title of the document being indexed.
-          type: string
-          example: 2024 Annual ESG Report
-        description:
-          description: A brief description or summary of the document content.
-          type: string
-          example: Comprehensive environmental, social, and governance report
-        metadata:
-          description: The metadata key-value pairs to associate with the document.
-            If present, this gets merged with existing artifact metadata.
-          type: object
-          additionalProperties: true
-          example:
-            doc_type: annual_report
-            year: 2024
-            department: sustainability
-        document:
-          description: The structured document to index with full hierarchical content.
-          type: object
-          additionalProperties: true
-          example:
-            id: annual_report_2024
-            type: structured
-            title: 2024 Annual ESG Report
-      additionalProperties: false
-    StructuredIndexingToolConfiguration:
-      description: A reusable configuration for a structured indexing tool that stores
-        predefined indexing parameters for indexing documents into the Vectara platform.
-      allOf:
-      - $ref: '#/components/schemas/ToolConfigurationBase'
-      - type: object
-        properties:
-          type:
-            description: This should always be `structured_indexing`.
-            type: string
-            default: structured_indexing
-            example: structured_indexing
-          argument_override:
-            description: Optional hardcoded arguments for tool calls. When specified,
-              these values will be used instead of allowing the LLM to fill in those
-              parameters.
-            $ref: '#/components/schemas/StructuredIndexingToolParameters'
-        required:
-        - type
-      x-vectaraParents:
-      - ToolConfiguration
-    SubAgentToolParameters:
-      description: Configurable parameters for the sub-agent tool. If not overridden,
-        they will be required by the LLM to fill in.
-      type: object
-      properties:
-        message:
-          description: The detailed task instructions for the sub-agent to perform
-            autonomously.
-          type: string
-          example: Review the code changes in pull request \#123 for security issues
-        session_tti_minutes:
-          description: Time to idle in minutes before the session expires.
-          type: integer
-          format: int64
-          minimum: 1
-          example: 60
-      additionalProperties: false
-    AgentKey:
-      description: A unique key that identifies an agent.
-      type: string
-      pattern: '[0-9a-zA-Z_-]+$'
-      minLength: 1
-      maxLength: 50
-      example: customer_support
-    SubAgentSessionMode:
-      description: 'Controls session behavior for sub-agent invocations:
-
-        - llm_controlled: LLM decides whether to create new or resume existing session
-
-        - persistent: Always reuse the same session (created on first invocation)
-
-        - ephemeral: Always create a new session on each invocation
-
-        '
-      type: string
-      enum:
-      - llm_controlled
-      - persistent
-      - ephemeral
-      default: ephemeral
-      example: ephemeral
-    SubAgentConfiguration:
-      description: User-configurable settings for the sub-agent tool. These parameters
-        are never exposed to the agent.
-      type: object
-      properties:
-        agent_key:
-          $ref: '#/components/schemas/AgentKey'
-        session_mode:
-          $ref: '#/components/schemas/SubAgentSessionMode'
-        session_metadata:
-          description: Optional metadata to associate with the sub-agent session.
-            Can contain any key-value pairs.
-          type: object
-          additionalProperties: true
-          default: {}
-          example:
-            source: parent_agent
-            task_type: code_review
-      required:
-      - agent_key
-    SubAgentToolConfiguration:
-      description: A reusable configuration for a sub-agent tool that invokes specialized
-        agents for complex tasks.
-      allOf:
-      - $ref: '#/components/schemas/ToolConfigurationBase'
-      - type: object
-        properties:
-          type:
-            description: This should always be `sub_agent`.
-            type: string
-            default: sub_agent
-            example: sub_agent
-          argument_override:
-            $ref: '#/components/schemas/SubAgentToolParameters'
-          sub_agent_configuration:
-            $ref: '#/components/schemas/SubAgentConfiguration'
-        required:
-        - type
-        - sub_agent_configuration
-      x-vectaraParents:
-      - ToolConfiguration
-    ArtifactReadToolParameters:
-      description: Configurable parameters for the artifact read tool. If not overridden,
-        they will be required by the LLM to fill in.
-      type: object
-      properties:
-        artifact_id:
-          description: The ID of the artifact to read.
-          type: string
-          example: art_abc123
-        encoding:
-          description: The encoding format for the content.
-          type: string
-          enum:
-          - raw
-          - base64
-          example: raw
-        start_line:
-          description: Optional starting line number (1-indexed).
-          type: integer
-          format: int32
-          example: 100
-        end_line:
-          description: Optional ending line number (1-indexed, inclusive).
-          type: integer
-          format: int32
-          example: 200
-      additionalProperties: false
-    ArtifactReadConfiguration:
-      description: User-configurable settings for the artifact read tool.
-      type: object
-      properties:
-        max_size_bytes:
-          description: Maximum file size in bytes for full reads without line ranges.
-            Defaults to 256KB.
-          type: integer
-          format: int64
-          minimum: 1
-          maximum: 10485760
-          default: 262144
-        max_lines:
-          description: Maximum number of lines for range-based reads. Defaults to
-            200.
-          type: integer
-          format: int32
-          minimum: 1
-          maximum: 10000
-          default: 200
-    ArtifactReadToolConfiguration:
-      description: A reusable configuration for an artifact read tool that reads artifacts
-        from the session workspace.
-      allOf:
-      - $ref: '#/components/schemas/ToolConfigurationBase'
-      - type: object
-        properties:
-          type:
-            description: This should always be `artifact_read`.
-            type: string
-            default: artifact_read
-            example: artifact_read
-          argument_override:
-            $ref: '#/components/schemas/ArtifactReadToolParameters'
-          tool_configuration:
-            $ref: '#/components/schemas/ArtifactReadConfiguration'
-        required:
-        - type
-      x-vectaraParents:
-      - ToolConfiguration
-    ArtifactGrepToolParameters:
-      description: Configurable parameters for the artifact grep tool. If not overridden,
-        they will be required by the LLM to fill in.
-      type: object
-      properties:
-        artifact_id:
-          description: The ID of the artifact to search.
-          type: string
-          example: art_abc123
-        pattern:
-          description: The pattern to search for (supports grep regex).
-          type: string
-          example: error|exception
-        grep_options:
-          description: Optional grep command options.
-          type: array
-          items:
-            type: string
-          example:
-          - -i
-          - -n
-      additionalProperties: false
-    ArtifactGrepToolConfiguration:
-      description: A reusable configuration for an artifact grep tool that searches
-        through artifact content.
-      allOf:
-      - $ref: '#/components/schemas/ToolConfigurationBase'
-      - type: object
-        properties:
-          type:
-            description: This should always be `artifact_grep`.
-            type: string
-            default: artifact_grep
-            example: artifact_grep
-          argument_override:
-            $ref: '#/components/schemas/ArtifactGrepToolParameters'
-        required:
-        - type
-      x-vectaraParents:
-      - ToolConfiguration
-    ImageReadToolParameters:
-      description: Configurable parameters for the image read tool. If not overridden,
-        they will be required by the LLM to fill in.
-      type: object
-      properties:
-        artifact_id:
-          description: The ID of the image artifact to view.
-          type: string
-          pattern: ^art_[a-z0-9_-]+$
-          example: art_photo_a3f2
-        detail:
-          description: Detail level for image processing.
-          type: string
-          enum:
-          - auto
-          - low
-          - high
-          default: auto
-          example: auto
-      additionalProperties: false
-    ImageReadToolConfiguration:
-      description: A reusable configuration for an image read tool that loads images
-        into the conversation context.
-      allOf:
-      - $ref: '#/components/schemas/ToolConfigurationBase'
-      - type: object
-        properties:
-          type:
-            description: This should always be `image_read`.
-            type: string
-            default: image_read
-            example: image_read
-          argument_override:
-            $ref: '#/components/schemas/ImageReadToolParameters'
-        required:
-        - type
-      x-vectaraParents:
-      - ToolConfiguration
-    DocumentConversionToolParameters:
-      description: Configurable parameters for the document conversion tool. If not
-        overridden, they will be required by the LLM to fill in.
-      type: object
-      properties:
-        artifact_id:
-          description: The ID of the artifact to convert.
-          type: string
-          example: art_abc123
-        output_format:
-          description: Output format for the converted document.
-          type: string
-          enum:
-          - markdown
-          - structured_document
-          example: markdown
-        description:
-          description: Optional description for the converted artifact.
-          type: string
-          example: PDF converted to markdown
-      additionalProperties: false
-    DocumentConversionToolConfiguration:
-      description: A reusable configuration for a document conversion tool that converts
-        document artifacts to various formats.
-      allOf:
-      - $ref: '#/components/schemas/ToolConfigurationBase'
-      - type: object
-        properties:
-          type:
-            description: This should always be `document_conversion`.
-            type: string
-            default: document_conversion
-            example: document_conversion
-          argument_override:
-            $ref: '#/components/schemas/DocumentConversionToolParameters'
-        required:
-        - type
-      x-vectaraParents:
-      - ToolConfiguration
-    GetDocumentTextParameters:
-      description: Configurable parameters for the get document text tool. If not
-        overridden, they will be required by the LLM to fill in.
-      type: object
-      properties:
-        document_id:
-          description: The document ID of the document to fetch text from.
-          type: string
-          minLength: 1
-          example: doc_12345
-        corpus_key:
-          description: The corpus key containing the document.
-          type: string
-          minLength: 1
-          example: my-corpus
-      additionalProperties: false
-    GetDocumentTextConfiguration:
-      description: User-configurable settings for the get document text tool. These
-        parameters are never exposed to the agent.
-      type: object
-      properties:
-        metadata:
-          type: object
-          description: Configuration for document metadata retrieval.
-          properties:
-            include:
-              type: boolean
-              description: Whether to include document metadata in the response. If
-                false, metadata artifact will not be created.
-              default: true
-            exclude_paths:
-              type: array
-              items:
-                type: string
-              description: List of JSONPath expressions for metadata fields to exclude
-                from the returned metadata.
-              default: []
-              example:
-              - $.internal.processedAt
-              - $.debug
-    GetDocumentTextToolConfiguration:
-      description: A reusable configuration for a get document text tool that fetches
-        document text content from a corpus.
-      allOf:
-      - $ref: '#/components/schemas/ToolConfigurationBase'
-      - type: object
-        properties:
-          type:
-            description: This should always be `get_document_text`.
-            type: string
-            default: get_document_text
-            example: get_document_text
-          argument_override:
-            $ref: '#/components/schemas/GetDocumentTextParameters'
-          tool_configuration:
-            $ref: '#/components/schemas/GetDocumentTextConfiguration'
-        required:
-        - type
-      x-vectaraParents:
-      - ToolConfiguration
-    ToolConfiguration:
-      description: A reusable tool configuration that stores user-defined argument
-        overrides and settings for a specific tool.
-      type: object
-      x-vectara-base-schema: '#/ToolConfigurationBase'
-      discriminator:
-        propertyName: type
-        mapping:
-          dynamic_vectara: '#/components/schemas/DynamicVectaraToolConfiguration'
-          mcp: '#/components/schemas/McpToolConfiguration'
-          corpora_search: '#/components/schemas/CorporaSearchToolConfiguration'
-          web_search: '#/components/schemas/WebSearchToolConfiguration'
-          lambda: '#/components/schemas/LambdaToolConfiguration'
-          structured_indexing: '#/components/schemas/StructuredIndexingToolConfiguration'
-          sub_agent: '#/components/schemas/SubAgentToolConfiguration'
-          artifact_read: '#/components/schemas/ArtifactReadToolConfiguration'
-          artifact_grep: '#/components/schemas/ArtifactGrepToolConfiguration'
-          image_read: '#/components/schemas/ImageReadToolConfiguration'
-          document_conversion: '#/components/schemas/DocumentConversionToolConfiguration'
-          get_document_text: '#/components/schemas/GetDocumentTextToolConfiguration'
-      oneOf:
-      - $ref: '#/components/schemas/DynamicVectaraToolConfiguration'
-      - $ref: '#/components/schemas/McpToolConfiguration'
-      - $ref: '#/components/schemas/CorporaSearchToolConfiguration'
-      - $ref: '#/components/schemas/WebSearchToolConfiguration'
-      - $ref: '#/components/schemas/LambdaToolConfiguration'
-      - $ref: '#/components/schemas/StructuredIndexingToolConfiguration'
-      - $ref: '#/components/schemas/SubAgentToolConfiguration'
-      - $ref: '#/components/schemas/ArtifactReadToolConfiguration'
-      - $ref: '#/components/schemas/ArtifactGrepToolConfiguration'
-      - $ref: '#/components/schemas/ImageReadToolConfiguration'
-      - $ref: '#/components/schemas/DocumentConversionToolConfiguration'
-      - $ref: '#/components/schemas/GetDocumentTextToolConfiguration'
-    WebGetToolParameters:
-      description: Configurable parameters for the web get tool. If not provided,
-        will be filled in by the agent.
-      type: object
-      properties:
-        url:
-          description: The URL to fetch content from.
-          oneOf:
-          - type: string
-          - $ref: '#/components/schemas/EagerReference'
-        method:
-          description: HTTP method to use.
-          type: string
-          enum:
-          - GET
-          - POST
-          - PUT
-          - DELETE
-          - HEAD
-        headers:
-          description: HTTP headers to include in the request.
-          oneOf:
-          - type: object
-            additionalProperties:
-              type: string
-          - $ref: '#/components/schemas/EagerReference'
-        body:
-          description: Request body for POST/PUT requests.
-          oneOf:
-          - type: string
-          - $ref: '#/components/schemas/EagerReference'
-        follow_redirects:
-          description: Whether to follow HTTP redirects.
-          oneOf:
-          - type: boolean
-          - $ref: '#/components/schemas/EagerReference'
-        timeout_seconds:
-          description: Request timeout in seconds.
-          oneOf:
-          - type: integer
-          - $ref: '#/components/schemas/EagerReference'
-        head_lines:
-          description: Number of lines from start to include in response.
-          oneOf:
-          - type: integer
-          - $ref: '#/components/schemas/EagerReference'
-        tail_lines:
-          description: Number of lines from end to include in response.
-          oneOf:
-          - type: integer
-          - $ref: '#/components/schemas/EagerReference'
-        ssl_verify:
-          description: Whether to verify SSL certificates.
-          oneOf:
-          - type: boolean
-          - $ref: '#/components/schemas/EagerReference'
-        max_content_bytes:
-          description: Maximum response size in bytes before truncation.
-          oneOf:
-          - type: integer
-          - $ref: '#/components/schemas/EagerReference'
-      additionalProperties: false
-    CreateWebGetToolConfigurationRequest:
-      description: Request to create a reusable configuration for a web get tool with
-        predefined parameters that can be applied to agents.
-      allOf:
-      - type: object
-        properties:
-          type:
-            description: This should always be `web_get`.
-            type: string
-            default: web_get
-            example: web_get
-          argument_override:
-            description: Optional hardcoded arguments for the web get tool call. When
-              specified, these values will be used instead of allowing the LLM to
-              fill in those parameters.
-            $ref: '#/components/schemas/WebGetToolParameters'
-        required:
-        - type
-      x-vectaraParents:
-      - CreateToolConfigurationRequest
-    CreateArtifactReadToolConfigurationRequest:
-      description: Request to create a reusable configuration for an artifact read
-        tool with predefined parameters that can be applied to agents.
-      allOf:
-      - type: object
-        properties:
-          type:
-            description: This should always be `artifact_read`.
-            type: string
-            default: artifact_read
-            example: artifact_read
-          argument_override:
-            description: Optional hardcoded arguments for the artifact read tool.
-              When specified, these values will be used instead of allowing the LLM
-              to fill in those parameters.
-            $ref: '#/components/schemas/ArtifactReadToolParameters'
-          tool_configuration:
-            $ref: '#/components/schemas/ArtifactReadConfiguration'
-        required:
-        - type
-      x-vectaraParents:
-      - CreateToolConfigurationRequest
-    UpdateArtifactReadToolConfigurationRequest:
-      description: Request to update a reusable configuration for an artifact read
-        tool with predefined parameters.
-      allOf:
-      - type: object
-        properties:
-          type:
-            description: This should always be `artifact_read`.
-            type: string
-            default: artifact_read
-            example: artifact_read
-          argument_override:
-            description: Optional hardcoded arguments for the artifact read tool.
-              When specified, these values will be used instead of allowing the LLM
-              to fill in those parameters.
-            $ref: '#/components/schemas/ArtifactReadToolParameters'
-          tool_configuration:
-            $ref: '#/components/schemas/ArtifactReadConfiguration'
-        required:
-        - type
-      x-vectaraParents:
-      - UpdateToolConfigurationRequest
     InstructionId:
       description: The unique identifier for an instruction.
       type: string
@@ -15542,6 +15724,13 @@ components:
             Email Sender'
       required:
       - rendered_instruction
+    AgentKey:
+      description: A unique key that identifies an agent.
+      type: string
+      pattern: '[0-9a-zA-Z_-]+$'
+      minLength: 1
+      maxLength: 50
+      example: customer_support
     AgentName:
       description: The human-readable name of an agent.
       type: string
@@ -15627,6 +15816,133 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
+    CorporaSearchToolParameters:
+      description: LLM-exposed parameters for the corpora search tool that can be
+        filled in during execution.
+      type: object
+      properties:
+        query:
+          description: The search query string, which is the question the user is
+            asking. If not provided, will be filled in by the agent.
+          type: string
+          maxLength: 5000
+          example: Am I allowed to bring pets to work?
+      additionalProperties: false
+    EagerReference:
+      title: EagerReference
+      description: A reference to a value resolved from the session context at the
+        start of each turn. Resolution occurs when a new message is submitted to the
+        agent session, before any LLM processing begins. The resolved value remains
+        constant throughout the turn and is not re-evaluated during the agent's response
+        or subsequent tool calls within the same turn.
+      type: object
+      x-vectaraParents:
+      - AgentKeyedSearchCorpusCorpusKey
+      - AgentKeyedSearchCorpusMetadataFilter
+      properties:
+        $ref:
+          type: string
+          description: A dot-notation path to the value in the session context.
+          example: session.metadata.filters.user_access
+      required:
+      - $ref
+      additionalProperties: false
+    AgentKeyedSearchCorpus:
+      title: AgentKeyedSearchCorpus
+      description: Agent-specific keyed search corpus that supports eager references
+        for corpus_key and metadata_filter.
+      type: object
+      properties:
+        corpus_key:
+          description: 'The corpus to search. Can be either a static string (e.g.
+            "my-corpus") or an EagerReference object (e.g. {"$ref": "session.metadata.corpus"}).
+            When an EagerReference is provided, the $ref path is resolved from the
+            session context at the start of each turn, before LLM processing begins.'
+          oneOf:
+          - type: string
+          - $ref: '#/components/schemas/EagerReference'
+        custom_dimensions:
+          allOf:
+          - $ref: '#/components/schemas/CustomDimensions'
+          nullable: true
+          default: null
+        metadata_filter:
+          description: 'The filter to narrow search results. Can be either a static
+            string (e.g. "doc.department = ''engineering''") or an EagerReference
+            object (e.g. {"$ref": "session.metadata.filters.user"}). When an EagerReference
+            is provided, the $ref path is resolved from the session context at the
+            start of each turn, before LLM processing begins.'
+          oneOf:
+          - type: string
+          - $ref: '#/components/schemas/EagerReference'
+        lexical_interpolation:
+          description: How much to weigh lexical scores compared to the embedding
+            score. 0 means lexical search is not used at all, and 1 means only lexical
+            search is used.
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          default: 0.025
+        semantics:
+          allOf:
+          - $ref: '#/components/schemas/SearchSemantics'
+          default: default
+        query:
+          description: Query override for this specific corpus.
+          type: string
+          maxLength: 5000
+      required:
+      - corpus_key
+    AgentSearchCorporaParameters:
+      title: AgentSearchCorporaParameters
+      description: Agent-specific search parameters that support eager references.
+      type: object
+      properties:
+        corpora:
+          description: The corpora to search, with support for eager references.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentKeyedSearchCorpus'
+          minItems: 1
+        offset:
+          description: Number of results to skip for pagination.
+          type: integer
+          format: int32
+          minimum: 0
+          default: 0
+        limit:
+          description: Maximum number of results to return.
+          type: integer
+          format: int32
+          minimum: 1
+          default: 10
+        context_configuration:
+          allOf:
+          - $ref: '#/components/schemas/ContextConfiguration'
+          nullable: true
+          default: null
+        reranker:
+          $ref: '#/components/schemas/SearchReranker'
+    AgentCorporaSearchQueryConfiguration:
+      title: AgentCorporaSearchQueryConfiguration
+      description: Agent-specific query configuration that supports eager references.
+        Use this in agent tool configurations when turn-start resolution is needed.
+      type: object
+      properties:
+        search:
+          $ref: '#/components/schemas/AgentSearchCorporaParameters'
+        generation:
+          allOf:
+          - $ref: '#/components/schemas/GenerationParameters'
+          default:
+            enabled: false
+        save_history:
+          description: Whether to save the query to history.
+          type: boolean
+          default: false
+      required:
+      - search
     InlineCorporaSearchToolConfiguration:
       title: InlineCorporaSearchToolConfiguration
       description: A corpora search tool configuration defined inline in the agent.
@@ -15654,6 +15970,52 @@ components:
       - query_configuration
       x-vectaraParents:
       - AgentToolConfiguration
+    WebSearchToolParameters:
+      description: Configurable parameters for the web search tool. If not provided,
+        will be filled in by the agent.
+      type: object
+      properties:
+        query:
+          description: The search query to execute.
+          type: string
+          example: latest AI developments 2024
+        limit:
+          description: Maximum number of results to return.
+          type: integer
+          minimum: 1
+          maximum: 20
+          example: 10
+        provider:
+          description: Search provider to use.
+          type: string
+          enum:
+          - tavily
+          example: tavily
+        include_domains:
+          description: List of domains to specifically include in search results.
+            When specified, results will ONLY come from these domains. Supports exact
+            domains (e.g., "github.com"), subdomains (e.g., "docs.github.com"), and
+            wildcard patterns (e.g., "*.github.com"). Subpaths are not supported.
+          type: array
+          items:
+            type: string
+          maxItems: 50
+          example:
+          - github.com
+          - docs.github.com
+          - '*.stackoverflow.com'
+        exclude_domains:
+          description: List of domains to specifically exclude from search results.
+            Supports exact domains (e.g., "spam.com"), subdomains (e.g., "bad.spam.com"),
+            and wildcard patterns (e.g., "*.spam.com"). Subpaths are not supported.
+          type: array
+          items:
+            type: string
+          maxItems: 50
+          example:
+          - spam.com
+          - unreliable-source.com
+      additionalProperties: false
     InlineWebSearchToolConfiguration:
       title: InlineWebSearchToolConfiguration
       description: A web search tool configuration defined inline in the agent.
@@ -15675,6 +16037,68 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
+    WebGetToolParameters:
+      description: Configurable parameters for the web get tool. If not provided,
+        will be filled in by the agent.
+      type: object
+      properties:
+        url:
+          description: The URL to fetch content from.
+          oneOf:
+          - type: string
+          - $ref: '#/components/schemas/EagerReference'
+        method:
+          description: HTTP method to use.
+          type: string
+          enum:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - HEAD
+        headers:
+          description: HTTP headers to include in the request.
+          oneOf:
+          - type: object
+            additionalProperties:
+              type: string
+          - $ref: '#/components/schemas/EagerReference'
+        body:
+          description: Request body for POST/PUT requests.
+          oneOf:
+          - type: string
+          - $ref: '#/components/schemas/EagerReference'
+        follow_redirects:
+          description: Whether to follow HTTP redirects.
+          oneOf:
+          - type: boolean
+          - $ref: '#/components/schemas/EagerReference'
+        timeout_seconds:
+          description: Request timeout in seconds.
+          oneOf:
+          - type: integer
+          - $ref: '#/components/schemas/EagerReference'
+        head_lines:
+          description: Number of lines from start to include in response.
+          oneOf:
+          - type: integer
+          - $ref: '#/components/schemas/EagerReference'
+        tail_lines:
+          description: Number of lines from end to include in response.
+          oneOf:
+          - type: integer
+          - $ref: '#/components/schemas/EagerReference'
+        ssl_verify:
+          description: Whether to verify SSL certificates.
+          oneOf:
+          - type: boolean
+          - $ref: '#/components/schemas/EagerReference'
+        max_content_bytes:
+          description: Maximum response size in bytes before truncation.
+          oneOf:
+          - type: integer
+          - $ref: '#/components/schemas/EagerReference'
+      additionalProperties: false
     InlineWebGetToolConfiguration:
       title: InlineWebGetToolConfiguration
       description: A web get tool configuration defined inline in the agent for fetching
@@ -15725,28 +16149,60 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
-    InlineStructuredIndexingToolConfiguration:
-      title: InlineStructuredIndexingToolConfiguration
-      description: A structured indexing tool configuration defined inline in the
-        agent for indexing into the Vectara platform.
+    SubAgentToolParameters:
+      description: Configurable parameters for the sub-agent tool. If not overridden,
+        they will be required by the LLM to fill in.
       type: object
       properties:
-        type:
+        message:
+          description: The detailed task instructions for the sub-agent to perform
+            autonomously.
           type: string
-          description: The type of tool configuration, which is always 'structured_indexing'
-            for inline structured indexing tool configurations.
-          default: structured_indexing
-        description_template:
-          $ref: '#/components/schemas/ToolDescriptionTemplate'
-        argument_override:
-          description: Optional hardcoded arguments for the structured indexing tool
-            call such as corpus_key etc. When specified, these values will be used
-            instead of allowing the LLM to fill in those parameters.
-          $ref: '#/components/schemas/StructuredIndexingToolParameters'
+          example: Review the code changes in pull request \#123 for security issues
+        session_tti_minutes:
+          description: Time to idle in minutes before the session expires.
+          type: integer
+          format: int64
+          minimum: 1
+          example: 60
+      additionalProperties: false
+    SubAgentSessionMode:
+      description: 'Controls session behavior for sub-agent invocations:
+
+        - llm_controlled: LLM decides whether to create new or resume existing session
+
+        - persistent: Always reuse the same session (created on first invocation)
+
+        - ephemeral: Always create a new session on each invocation
+
+        '
+      type: string
+      enum:
+      - llm_controlled
+      - persistent
+      - ephemeral
+      default: ephemeral
+      example: ephemeral
+    SubAgentConfiguration:
+      description: User-configurable settings for the sub-agent tool. These parameters
+        are never exposed to the agent.
+      type: object
+      properties:
+        agent_key:
+          $ref: '#/components/schemas/AgentKey'
+        session_mode:
+          $ref: '#/components/schemas/SubAgentSessionMode'
+        session_metadata:
+          description: Optional metadata to associate with the sub-agent session.
+            Can contain any key-value pairs.
+          type: object
+          additionalProperties: true
+          default: {}
+          example:
+            source: parent_agent
+            task_type: code_review
       required:
-      - type
-      x-vectaraParents:
-      - AgentToolConfiguration
+      - agent_key
     InlineSubAgentToolConfiguration:
       title: InlineSubAgentToolConfiguration
       description: A sub-agent tool configuration defined inline in the agent for
@@ -15769,6 +16225,53 @@ components:
       - sub_agent_configuration
       x-vectaraParents:
       - AgentToolConfiguration
+    ArtifactReadToolParameters:
+      description: Configurable parameters for the artifact read tool. If not overridden,
+        they will be required by the LLM to fill in.
+      type: object
+      properties:
+        artifact_id:
+          description: The ID of the artifact to read.
+          type: string
+          example: art_abc123
+        encoding:
+          description: The encoding format for the content.
+          type: string
+          enum:
+          - raw
+          - base64
+          example: raw
+        start_line:
+          description: Optional starting line number (1-indexed).
+          type: integer
+          format: int32
+          example: 100
+        end_line:
+          description: Optional ending line number (1-indexed, inclusive).
+          type: integer
+          format: int32
+          example: 200
+      additionalProperties: false
+    ArtifactReadConfiguration:
+      description: User-configurable settings for the artifact read tool.
+      type: object
+      properties:
+        max_size_bytes:
+          description: Maximum file size in bytes for full reads without line ranges.
+            Defaults to 256KB.
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 10485760
+          default: 262144
+        max_lines:
+          description: Maximum number of lines for range-based reads. Defaults to
+            200.
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 10000
+          default: 200
     InlineArtifactReadToolConfiguration:
       title: InlineArtifactReadToolConfiguration
       description: An artifact read tool configuration defined inline in the agent
@@ -15790,6 +16293,28 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
+    ArtifactGrepToolParameters:
+      description: Configurable parameters for the artifact grep tool. If not overridden,
+        they will be required by the LLM to fill in.
+      type: object
+      properties:
+        artifact_id:
+          description: The ID of the artifact to search.
+          type: string
+          example: art_abc123
+        pattern:
+          description: The pattern to search for (supports grep regex).
+          type: string
+          example: error|exception
+        grep_options:
+          description: Optional grep command options.
+          type: array
+          items:
+            type: string
+          example:
+          - -i
+          - -n
+      additionalProperties: false
     InlineArtifactGrepToolConfiguration:
       title: InlineArtifactGrepToolConfiguration
       description: An artifact grep tool configuration defined inline in the agent
@@ -15809,6 +16334,26 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
+    ImageReadToolParameters:
+      description: Configurable parameters for the image read tool. If not overridden,
+        they will be required by the LLM to fill in.
+      type: object
+      properties:
+        artifact_id:
+          description: The ID of the image artifact to view.
+          type: string
+          pattern: ^art_[a-z0-9_-]+$
+          example: art_photo_a3f2
+        detail:
+          description: Detail level for image processing.
+          type: string
+          enum:
+          - auto
+          - low
+          - high
+          default: auto
+          example: auto
+      additionalProperties: false
     InlineImageReadToolConfiguration:
       title: InlineImageReadToolConfiguration
       description: An image read tool configuration defined inline in the agent for
@@ -15828,6 +16373,27 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
+    DocumentConversionToolParameters:
+      description: Configurable parameters for the document conversion tool. If not
+        overridden, they will be required by the LLM to fill in.
+      type: object
+      properties:
+        artifact_id:
+          description: The ID of the artifact to convert.
+          type: string
+          example: art_abc123
+        output_format:
+          description: Output format for the converted document.
+          type: string
+          enum:
+          - markdown
+          - structured_document
+          example: markdown
+        description:
+          description: Optional description for the converted artifact.
+          type: string
+          example: PDF converted to markdown
+      additionalProperties: false
     InlineDocumentConversionToolConfiguration:
       title: InlineDocumentConversionToolConfiguration
       description: A document conversion tool configuration defined inline in the
@@ -15847,6 +16413,46 @@ components:
       - type
       x-vectaraParents:
       - AgentToolConfiguration
+    GetDocumentTextParameters:
+      description: Configurable parameters for the get document text tool. If not
+        overridden, they will be required by the LLM to fill in.
+      type: object
+      properties:
+        document_id:
+          description: The document ID of the document to fetch text from.
+          type: string
+          minLength: 1
+          example: doc_12345
+        corpus_key:
+          description: The corpus key containing the document.
+          type: string
+          minLength: 1
+          example: my-corpus
+      additionalProperties: false
+    GetDocumentTextConfiguration:
+      description: User-configurable settings for the get document text tool. These
+        parameters are never exposed to the agent.
+      type: object
+      properties:
+        metadata:
+          type: object
+          description: Configuration for document metadata retrieval.
+          properties:
+            include:
+              type: boolean
+              description: Whether to include document metadata in the response. If
+                false, metadata artifact will not be created.
+              default: true
+            exclude_paths:
+              type: array
+              items:
+                type: string
+              description: List of JSONPath expressions for metadata fields to exclude
+                from the returned metadata.
+              default: []
+              example:
+              - $.internal.processedAt
+              - $.debug
     InlineGetDocumentTextToolConfiguration:
       title: InlineGetDocumentTextToolConfiguration
       description: A get document text tool configuration defined inline in the agent
@@ -15881,7 +16487,6 @@ components:
           web_search: '#/components/schemas/InlineWebSearchToolConfiguration'
           web_get: '#/components/schemas/InlineWebGetToolConfiguration'
           lambda: '#/components/schemas/InlineLambdaToolConfiguration'
-          structured_indexing: '#/components/schemas/InlineStructuredIndexingToolConfiguration'
           sub_agent: '#/components/schemas/InlineSubAgentToolConfiguration'
           artifact_read: '#/components/schemas/InlineArtifactReadToolConfiguration'
           artifact_grep: '#/components/schemas/InlineArtifactGrepToolConfiguration'
@@ -15895,7 +16500,6 @@ components:
       - $ref: '#/components/schemas/InlineWebSearchToolConfiguration'
       - $ref: '#/components/schemas/InlineWebGetToolConfiguration'
       - $ref: '#/components/schemas/InlineLambdaToolConfiguration'
-      - $ref: '#/components/schemas/InlineStructuredIndexingToolConfiguration'
       - $ref: '#/components/schemas/InlineSubAgentToolConfiguration'
       - $ref: '#/components/schemas/InlineArtifactReadToolConfiguration'
       - $ref: '#/components/schemas/InlineArtifactGrepToolConfiguration'
@@ -17623,12 +18227,17 @@ components:
             additionalProperties: true
             example:
               result: "Current weather is 70\xB0F and sunny"
+          error:
+            description: Whether the tool call resulted in an error.
+            type: boolean
+            default: false
         required:
         - type
         - tool_call_id
         - tool_configuration_name
         - tool_name
         - tool_output
+        - error
       x-vectaraParents:
       - AgentEvent
       - AgentStreamedResponse
@@ -18244,9 +18853,15 @@ components:
           context_consumed: '#/components/schemas/ContextConsumedEvent'
           compaction_started: '#/components/schemas/CompactionStartedEvent'
           compaction: '#/components/schemas/CompactionEvent'
+          skill_load: '#/components/schemas/SkillLoadEvent'
+          thinking: '#/components/schemas/ThinkingEvent'
+          artifact_upload: '#/components/schemas/ArtifactUploadEvent'
           error: '#/components/schemas/StreamError'
           end: '#/components/schemas/StreamResponseEnd'
       oneOf:
+      - $ref: '#/components/schemas/SkillLoadEvent'
+      - $ref: '#/components/schemas/ThinkingEvent'
+      - $ref: '#/components/schemas/ArtifactUploadEvent'
       - $ref: '#/components/schemas/InputMessageEvent'
       - $ref: '#/components/schemas/StreamingAgentOutput'
       - $ref: '#/components/schemas/StreamingAgentOutputEnd'
@@ -18683,511 +19298,126 @@ components:
       required:
       - executions
       - metadata
-    PipelineStatus:
-      description: The current operational status of the pipeline.
-      type: string
-      enum:
-      - initializing
-      - active
-      - paused
-      - error
-    PipelineKey:
-      description: The unique key for the pipeline. Can be user-provided or auto-generated.
-      type: string
-      pattern: '[0-9a-zA-Z_-]+'
-      minLength: 1
-      maxLength: 50
-      example: sharepoint-legal-ingest
-    PipelineName:
-      description: The human-readable name of the pipeline.
-      type: string
-      minLength: 1
-      maxLength: 255
-      example: SharePoint Legal Docs Ingest
-    SharepointSourceConfiguration:
-      description: Configuration for ingesting documents from a SharePoint site.
-      type: object
-      x-vectaraParents:
-      - PipelineSource
-      properties:
-        type:
-          type: string
-          default: sharepoint
-          example: sharepoint
-        site_url:
-          description: The full URL of the SharePoint site.
-          type: string
-          example: https://contoso.sharepoint.com/sites/legal
-        tenant_id:
-          description: Azure AD tenant ID.
-          type: string
-          example: 72f988bf-86f1-41af-91ab-2d7cd011db47
-        client_id:
-          description: Azure AD application (client) ID for OAuth.
-          type: string
-          example: 0a1b2c3d-4e5f-6789-abcd-ef0123456789
-        client_secret:
-          description: Azure AD client secret. Encrypted at rest and not returned
-            in responses.
-          type: string
-          writeOnly: true
-        drive_id:
-          description: The ID of a specific document library. If omitted, the default
-            document library is used.
-          type: string
-        folder_path:
-          description: Optional folder path to scope ingestion to a subdirectory.
-          type: string
-          example: /Contracts/2026
-      required:
-      - type
-      - site_url
-      - tenant_id
-      - client_id
-      - client_secret
-    DocumentumSourceConfiguration:
-      description: Configuration for ingesting documents from OpenText Documentum.
-      type: object
-      x-vectaraParents:
-      - PipelineSource
-      properties:
-        type:
-          type: string
-          default: documentum
-          example: documentum
-        base_url:
-          description: The Documentum REST API base URL.
-          type: string
-          example: https://documentum.example.com/dctm-rest
-        repository:
-          description: The Documentum repository name.
-          type: string
-          example: my_repo
-        username:
-          description: Documentum username for authentication.
-          type: string
-        password:
-          description: Documentum password. Encrypted at rest and not returned in
-            responses.
-          type: string
-          writeOnly: true
-        cabinet_path:
-          description: Optional cabinet or folder path to scope ingestion.
-          type: string
-          example: /Legal/Contracts
-        dql_filter:
-          description: Optional DQL qualification to filter documents (e.g. type or
-            date constraints).
-          type: string
-          example: r_modify_date > DATE('2026-01-01','yyyy-mm-dd')
-      required:
-      - type
-      - base_url
-      - repository
-      - username
-      - password
-    S3SourceConfiguration:
-      description: Configuration for ingesting objects from an Amazon S3 bucket.
-      type: object
-      x-vectaraParents:
-      - PipelineSource
-      properties:
-        type:
-          type: string
-          default: s3
-          example: s3
-        bucket:
-          description: The S3 bucket name.
-          type: string
-          example: my-documents-bucket
-        prefix:
-          description: Key prefix to scope ingestion to a subset of objects.
-          type: string
-          example: legal/contracts/
-        region:
-          description: AWS region where the bucket is located.
-          type: string
-          example: us-east-1
-        access_key_id:
-          description: AWS access key ID. Encrypted at rest and not returned in responses.
-          type: string
-          writeOnly: true
-        secret_access_key:
-          description: AWS secret access key. Encrypted at rest and not returned in
-            responses.
-          type: string
-          writeOnly: true
-      required:
-      - type
-      - bucket
-      - region
-      - access_key_id
-      - secret_access_key
-    PipelineSource:
-      description: The source system to ingest data from.
-      discriminator:
-        propertyName: type
-        mapping:
-          sharepoint: '#/components/schemas/SharepointSourceConfiguration'
-          documentum: '#/components/schemas/DocumentumSourceConfiguration'
-          s3: '#/components/schemas/S3SourceConfiguration'
-      oneOf:
-      - $ref: '#/components/schemas/SharepointSourceConfiguration'
-      - $ref: '#/components/schemas/DocumentumSourceConfiguration'
-      - $ref: '#/components/schemas/S3SourceConfiguration'
-    CronTriggerConfiguration:
-      description: Run the pipeline on a cron schedule.
-      type: object
-      x-vectaraParents:
-      - PipelineTrigger
-      properties:
-        type:
-          type: string
-          default: cron
-          example: cron
-        expression:
-          description: A 5-field cron expression (minute, hour, day-of-month, month,
-            day-of-week) in UTC.
-          type: string
-          x-vectara-cron: true
-          example: 0 */6 * * *
-      required:
-      - type
-      - expression
-    IntervalTriggerConfiguration:
-      description: Run the pipeline at a fixed interval.
-      type: object
-      x-vectaraParents:
-      - PipelineTrigger
-      properties:
-        type:
-          type: string
-          default: interval
-          example: interval
-        duration:
-          description: An ISO-8601 duration specifying the interval between runs.
-          type: string
-          x-vectara-duration: true
-          example: PT1H
-      required:
-      - type
-      - duration
-    PipelineTrigger:
-      description: Defines when the pipeline runs.
-      discriminator:
-        propertyName: type
-        mapping:
-          cron: '#/components/schemas/CronTriggerConfiguration'
-          interval: '#/components/schemas/IntervalTriggerConfiguration'
-      oneOf:
-      - $ref: '#/components/schemas/CronTriggerConfiguration'
-      - $ref: '#/components/schemas/IntervalTriggerConfiguration'
-    AgentTransformConfiguration:
-      description: 'Process source data using an agent. Each run creates one or more
-        agent sessions
+    AgentIdentityMode:
+      description: 'The role management mode of the agent''s identity.
 
-        and sends source records as input for the agent to act on per its instructions.
+        - `auto`: The platform keeps roles in sync with the agent''s tool configuration.
+        When tools change, roles are automatically recomputed.
 
-        '
-      type: object
-      x-vectaraParents:
-      - PipelineTransform
-      properties:
-        type:
-          type: string
-          default: agent
-          example: agent
-        agent_key:
-          $ref: '#/components/schemas/AgentKey'
-      required:
-      - type
-      - agent_key
-    PipelineTransform:
-      description: 'Defines how source data is processed. Currently only agent transforms
-        are supported.
-
-        '
-      type: object
-      discriminator:
-        propertyName: type
-        mapping:
-          agent: '#/components/schemas/AgentTransformConfiguration'
-      properties:
-        type:
-          description: The type of transform.
-          type: string
-          default: agent
-          example: agent
-      oneOf:
-      - $ref: '#/components/schemas/AgentTransformConfiguration'
-    PipelineSyncMode:
-      description: 'How the pipeline syncs data from the source.
-
-        - `incremental`: Only process new or changed records since the last watermark.
-
-        - `full_refresh`: Process all records from the source on each run.
+        - `manual`: Roles are user-managed. The platform will not modify roles when
+        the agent is updated.
 
         '
       type: string
       enum:
-      - incremental
-      - full_refresh
-      default: incremental
-    PipelineWatermark:
-      description: Tracks incremental sync progress. The value is opaque and source-specific
-        (e.g. a timestamp or change token).
-      type: object
-      readOnly: true
-      properties:
-        value:
-          description: The current watermark value.
-          type: string
-          example: '2026-02-19T08:00:00Z'
-        updated_at:
-          description: When the watermark was last advanced.
-          type: string
-          format: date-time
-      required:
-      - value
-      - updated_at
-    Pipeline:
-      description: "A pipeline is an automated data flow that sends all data from\
-        \ a source system to an agent\nfor the agent to act on per its instructions.\
-        \ A new agent session is created for each source\nrecord, giving the agent\
-        \ full autonomy to decide what to do with each piece of data \u2014 index\
-        \ it\ninto a corpus, extract structured information, route it, or discard\
-        \ it.\n\nThis is distinct from an **agent schedule**, which is a recurring\
-        \ single execution of an\nagent with a fixed message. A schedule creates one\
-        \ session per trigger; a pipeline creates\na session per source record.\n\n\
-        This is also distinct from an **agent connector** (e.g. Slack), which is a\
-        \ bidirectional\nintegration for interactive chat with an agent. A pipeline\
-        \ is a one-directional automated\nflow of all data through an agent.\n"
-      type: object
-      properties:
-        key:
-          $ref: '#/components/schemas/PipelineKey'
-        name:
-          $ref: '#/components/schemas/PipelineName'
-        description:
-          description: A description of what this pipeline does.
-          type: string
-          example: Ingests legal contracts from SharePoint and indexes them into the
-            legal corpus.
-        source:
-          $ref: '#/components/schemas/PipelineSource'
-        trigger:
-          $ref: '#/components/schemas/PipelineTrigger'
-        transform:
-          $ref: '#/components/schemas/PipelineTransform'
-        sync_mode:
-          $ref: '#/components/schemas/PipelineSyncMode'
-        watermark:
-          description: The current incremental sync watermark. Null if the pipeline
-            has never run.
-          allOf:
-          - $ref: '#/components/schemas/PipelineWatermark'
-          nullable: true
-        status:
-          $ref: '#/components/schemas/PipelineStatus'
-        status_message:
-          description: Human-readable status details, such as an error description.
-          type: string
-          nullable: true
-        enabled:
-          description: Whether the pipeline is enabled. Disabled pipelines do not
-            run on their trigger schedule.
-          type: boolean
-          default: true
-        metadata:
-          description: Arbitrary key-value metadata for the pipeline.
-          type: object
-          additionalProperties:
-            type: string
-        created_at:
-          description: When the pipeline was created.
-          type: string
-          format: date-time
-        updated_at:
-          description: When the pipeline was last updated.
-          type: string
-          format: date-time
-      required:
-      - key
-      - name
-      - source
-      - trigger
-      - transform
-      - sync_mode
-      - status
-      - enabled
-      - created_at
-    ListPipelinesResponse:
-      description: Response containing a list of pipelines.
-      type: object
-      properties:
-        pipelines:
-          type: array
-          items:
-            $ref: '#/components/schemas/Pipeline'
-        metadata:
-          $ref: '#/components/schemas/ListMetadata'
-      required:
-      - pipelines
-      - metadata
-    CreatePipelineRequest:
-      description: Request to create a new pipeline.
-      type: object
-      properties:
-        key:
-          description: A user-provided key for the pipeline. If omitted, one is auto-generated.
-          allOf:
-          - $ref: '#/components/schemas/PipelineKey'
-        name:
-          $ref: '#/components/schemas/PipelineName'
-        description:
-          type: string
-        source:
-          $ref: '#/components/schemas/PipelineSource'
-        trigger:
-          $ref: '#/components/schemas/PipelineTrigger'
-        transform:
-          $ref: '#/components/schemas/PipelineTransform'
-        sync_mode:
-          $ref: '#/components/schemas/PipelineSyncMode'
-        enabled:
-          type: boolean
-          default: true
-        metadata:
-          type: object
-          additionalProperties:
-            type: string
-          default: {}
-      required:
-      - name
-      - source
-      - trigger
-      - transform
-    UpdatePipelineRequest:
-      description: Request to partially update an existing pipeline. Omitted fields
-        are preserved.
-      type: object
-      properties:
-        name:
-          $ref: '#/components/schemas/PipelineName'
-        description:
-          type: string
-          nullable: true
-        source:
-          $ref: '#/components/schemas/PipelineSource'
-        trigger:
-          $ref: '#/components/schemas/PipelineTrigger'
-        transform:
-          $ref: '#/components/schemas/PipelineTransform'
-        sync_mode:
-          $ref: '#/components/schemas/PipelineSyncMode'
-        enabled:
-          type: boolean
-        metadata:
-          type: object
-          additionalProperties:
-            type: string
-          nullable: true
-    PipelineRunId:
-      description: The unique identifier for a pipeline run.
-      type: string
-      pattern: run_[0-9a-zA-Z_-]+
-      example: run_20260219_001
-    PipelineRunStatus:
-      description: The status of a pipeline run.
-      type: string
-      enum:
-      - queued
-      - running
-      - completed
-      - failed
-      - cancelled
-    PipelineRunTriggerType:
-      description: What initiated the pipeline run.
-      type: string
-      enum:
-      - scheduled
+      - auto
       - manual
-    PipelineRun:
-      description: 'A single execution of a pipeline. Each run fetches data from the
-        source and creates one
-
-        agent session per record. Each record is mapped 1:1 to a session.
-
-        '
+      example: auto
+    AgentIdentity:
+      description: The identity associated with an agent, including its roles and
+        management mode.
       type: object
       properties:
-        id:
-          $ref: '#/components/schemas/PipelineRunId'
-        pipeline_key:
-          $ref: '#/components/schemas/PipelineKey'
-        status:
-          $ref: '#/components/schemas/PipelineRunStatus'
-        trigger_type:
-          $ref: '#/components/schemas/PipelineRunTriggerType'
-        records_fetched:
-          description: Number of records discovered from the source in this run.
-          type: integer
-          format: int32
-          default: 0
-        records_processed:
-          description: Number of records successfully processed by the agent.
-          type: integer
-          format: int32
-          default: 0
-        records_failed:
-          description: Number of records that failed processing.
-          type: integer
-          format: int32
-          default: 0
-        session_keys:
-          description: The agent sessions created during this run, one per source
-            record processed.
+        mode:
+          $ref: '#/components/schemas/AgentIdentityMode'
+        client_id:
+          description: The OAuth2 client ID of the agent's service account.
+          type: string
+          readOnly: true
+          example: abc123def456
+        api_roles:
+          description: Customer-level roles assigned to this identity.
           type: array
           items:
-            type: string
-        error:
-          description: Error details if the run failed.
-          type: string
-          nullable: true
-        started_at:
-          description: When the run started executing.
-          type: string
-          format: date-time
-          nullable: true
-        completed_at:
-          description: When the run finished.
-          type: string
-          format: date-time
-          nullable: true
-        created_at:
-          description: When the run was created.
-          type: string
-          format: date-time
+            $ref: '#/components/schemas/ApiRole'
+        corpus_roles:
+          description: Corpus-specific role assignments for this identity.
+          type: array
+          items:
+            $ref: '#/components/schemas/CorpusRole'
+        agent_roles:
+          description: Agent-specific role assignments for this identity.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentRole'
       required:
-      - id
-      - pipeline_key
-      - status
-      - trigger_type
-      - records_fetched
-      - records_processed
-      - records_failed
-      - session_keys
-      - created_at
-    ListPipelineRunsResponse:
-      description: Response containing a list of pipeline runs.
+      - mode
+      - client_id
+      - api_roles
+      - corpus_roles
+      - agent_roles
+    UpdateAgentIdentityRequest:
+      description: "Update the agent's identity. All fields are optional \u2014 only\
+        \ provided fields are changed.\n\nSetting `mode` to `manual` freezes roles.\
+        \ The platform will no longer recompute roles when the agent's tool configuration\
+        \ changes.\n\nSetting `mode` to `auto` resumes platform-managed roles. The\
+        \ platform will immediately resync roles to match the current tool configuration.\
+        \ Any provided role fields are ignored in auto mode.\n"
       type: object
       properties:
-        runs:
+        mode:
+          $ref: '#/components/schemas/AgentIdentityMode'
+        api_roles:
+          description: Customer-level roles to assign. Only applied in `manual` mode.
           type: array
           items:
-            $ref: '#/components/schemas/PipelineRun'
-        metadata:
-          $ref: '#/components/schemas/ListMetadata'
-      required:
-      - runs
-      - metadata
+            $ref: '#/components/schemas/ApiRole'
+        corpus_roles:
+          description: Corpus-specific roles to assign. Only applied in `manual` mode.
+          type: array
+          items:
+            $ref: '#/components/schemas/CorpusRole'
+        agent_roles:
+          description: Agent-specific roles to assign. Only applied in `manual` mode.
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentRole'
+x-tagGroups:
+- name: Agents
+  tags:
+  - Agents
+  - Agent Sessions
+  - Agent Schedules
+  - Agent Identity
+  - Guardrails
+  - Instructions
+  - Tools
+  - Tool Servers
+  - Agent Connectors
+  - Pipelines
+  - Pipeline Runs
+- name: Data
+  tags:
+  - Corpora
+  - Documents
+  - Upload
+  - Index
+- name: Search and Retrieval
+  tags:
+  - Queries
+  - Metadata Query
+- name: Access Control
+  tags:
+  - Authentication
+  - API Keys
+  - Application Clients
+  - Users
+- name: Analytics
+  tags:
+  - Query History
+  - Jobs
+- name: Platform
+  tags:
+  - Large Language Models
+  - Encoders
+  - Rerankers
+  - Generation Presets
+  - Table Extractors
+  - LLM Chat Completions
+- name: Quality and Evaluation
+  tags:
+  - Factual Consistency Evaluation
+  - Hallucination Correctors
+- name: Deprecated
+  tags:
+  - Chats

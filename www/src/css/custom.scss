@@ -274,6 +274,11 @@ but in production this class isn't in use and we need to target this element by 
   margin-bottom: 12px;
 }
 
+/* Hide duplicate version badge from OpenAPI plugin (Docusaurus docs versioning already shows one) */
+.theme-doc-markdown .theme-doc-version-badge {
+  display: none;
+}
+
 h1
   + .themedImage--light_node_modules-\@docusaurus-theme-classic-lib-theme-ThemedImage-styles-module {
   display: none !important;

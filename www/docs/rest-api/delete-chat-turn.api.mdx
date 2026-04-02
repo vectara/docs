@@ -1,0 +1,75 @@
+---
+id: delete-chat-turn
+title: "Delete a turn"
+description: "Delete a turn from a chat. This will delete all subsequent turns in the chat."
+sidebar_label: "Delete a turn"
+hide_title: true
+hide_table_of_contents: true
+api: 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
+sidebar_class_name: "delete api-method"
+info_path: docs/rest-api/vectara-rest-api-v-2
+custom_edit_url: null
+---
+
+import MethodEndpoint from "@theme/ApiExplorer/MethodEndpoint";
+import ParamsDetails from "@theme/ParamsDetails";
+import RequestSchema from "@theme/RequestSchema";
+import StatusCodes from "@theme/StatusCodes";
+import OperationTabs from "@theme/OperationTabs";
+import TabItem from "@theme/TabItem";
+import Heading from "@theme/Heading";
+
+<Heading
+  as={"h1"}
+  className={"openapi__heading"}
+  children={"Delete a turn"}
+>
+</Heading>
+
+<MethodEndpoint
+  method={"delete"}
+  path={"/v2/chats/{chat_id}/turns/{turn_id}"}
+  context={"endpoint"}
+>
+  
+</MethodEndpoint>
+
+:::caution deprecated
+
+This endpoint has been deprecated and may be replaced or removed in future versions of the API.
+
+:::
+
+Delete a turn from a chat. This will delete all subsequent turns in the chat.
+
+<Heading
+  id={"request"}
+  as={"h2"}
+  className={"openapi-tabs__heading"}
+  children={"Request"}
+>
+</Heading>
+
+<ParamsDetails
+  parameters={[{"in":"header","name":"Request-Timeout","description":"The API will make a best effort to complete the request in the specified seconds or time out.","schema":{"type":"integer","minimum":1},"required":false},{"in":"header","name":"Request-Timeout-Millis","description":"The API will make a best effort to complete the request in the specified milliseconds or time out.","schema":{"type":"integer","minimum":1}},{"in":"path","name":"chat_id","description":"The ID of the chat.","required":true,"schema":{"type":"string","pattern":"cht_.+$"}},{"in":"path","name":"turn_id","description":"The ID of the turn.","required":true,"schema":{"type":"string","pattern":"trn_.+$"}}]}
+>
+  
+</ParamsDetails>
+
+<RequestSchema
+  title={"Body"}
+  body={undefined}
+>
+  
+</RequestSchema>
+
+<StatusCodes
+  id={undefined}
+  label={undefined}
+  responses={{"204":{"description":"Successfully deleted a turn."},"403":{"description":"Permissions do not allow deleting the turn.","content":{"application/json":{"schema":{"description":"A general error response with an error code and message.","type":"object","properties":{"messages":{"description":"The messages describing why the error occurred.","type":"array","items":{"title":"message","type":"string","example":"Internal server error."}},"request_id":{"description":"The ID of the request that can be used to help Vectara support debug what went wrong.","type":"string"}},"title":"Error"}}}},"404":{"description":"Corpus, chat, or turn not found.","content":{"application/json":{"schema":{"description":"Error returned when a requested resource does not exist.","type":"object","properties":{"id":{"description":"The ID cannot be found.","type":"string"},"messages":{"type":"array","items":{"title":"message","type":"string"}},"request_id":{"description":"The ID of the request that can be used to help Vectara support debug what went wrong.","type":"string"}},"title":"NotFoundError"}}}}}}
+>
+  
+</StatusCodes>
+
+
+      
