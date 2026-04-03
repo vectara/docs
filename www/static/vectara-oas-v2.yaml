@@ -1,12 +1,40 @@
 openapi: 3.0.0
 info:
   title: Vectara REST API v2
-  description: "REST APIs provide a traditional integration path for web-based applications.\n\
-    You can find all of our APIs at `https://api.vectara.io/v2/<api-endpoint>` The\
-    \ API endpoints are outlined in the various subsections of this API Reference\
-    \ section and are designed to be intuitive and follow a standard RESTful structure.\n\
-    \n- The current version is **v2**.\n- `api-endpoint` follows a hierarchical structure,\
-    \ using lowercase and hyphens.\n  For example, `/corpora/:corpus_key/documents`.\n"
+  description: "The Vectara REST API gives you server-side control over agentic AI\
+    \ applications with enterprise-grade RBAC, multi-tenancy, and full observability.\
+    \ Build agents that combine Vectara's multimodal retrieval with tool use, structured\
+    \ instructions, and managed sessions \u2014 all through simple REST endpoints.\n\
+    \nAll endpoints live at `https://api.vectara.io/v2/<resource>` using lowercase,\
+    \ hyphenated paths (e.g. `/corpora/:corpus_key/documents`).\n\n## API conventions\n\
+    \nWe follow standard REST conventions: `GET` to read, `POST` to create, `PATCH`\
+    \ to update, `PUT` to replace, and `DELETE` to remove. Actions that don't map\
+    \ to CRUD verbs use a separate `POST /<resource>/<action>` path (e.g. `POST /corpora/:corpus_key/reset`).\n\
+    \n**Backward compatibility** \u2014 New fields may be added to any response at\
+    \ any time. Fields are never removed, only deprecated. Clients should ignore unknown\
+    \ fields. We aim for strong backward compatibility, though the agentic AI space\
+    \ is evolving rapidly and agent-related APIs may see more frequent additions.\n\
+    \n## Authentication methods\n\nEvery API request must be authenticated using one\
+    \ of these methods:\n\n**API Key** \u2014 Pass your key in the `x-api-key` header.\
+    \ API keys inherit the roles of the user who created them. Use query-scoped keys\
+    \ for read-only access and personal keys for full account operations.\n\n**OAuth\
+    \ 2.0** \u2014 Use the client credentials flow to obtain a JWT token from `https://auth.vectara.io/oauth2/token`,\
+    \ then pass it in the `Authorization: Bearer <token>` header. Tokens expire after\
+    \ 30 minutes.\n\n## Role-based access control\n\nEach endpoint requires specific\
+    \ roles. The role badges on each endpoint page show which roles grant access.\
+    \ Vectara uses three role types:\n\n**API Roles** (account-wide, assigned to users):\
+    \ Roles like `owner`, `administrator`, `corpus_administrator`, `corpus_developer`,\
+    \ `corpus_viewer`, `agent_administrator`, `agent_developer`, `agent_viewer`, `agent_user`,\
+    \ `pipeline_administrator`, `pipeline_viewer`, and `viewer`. These grant access\
+    \ across all resources of that type.\n\n**Corpus Roles** (per-corpus, assigned\
+    \ on specific corpora): `owner`, `administrator`, `editor`, `viewer`. These grant\
+    \ access to a specific corpus only.\n\n**Agent Roles** (per-agent, assigned on\
+    \ specific agents): `agent_administrator`, `agent_developer`, `agent_viewer`,\
+    \ `agent_user`. These grant access to a specific agent only.\n\nA user's effective\
+    \ permissions are the union of their API roles, corpus roles, and agent roles.\
+    \ Higher roles in each hierarchy inherit lower role permissions. See [Role-based\
+    \ access control](/docs/security/authorization/role-based-access-control) for\
+    \ the full role hierarchy and assignment instructions.\n"
   version: '2.0'
   termsOfService: https://vectara.com/legal/terms-of-service/
   x-logo:
@@ -115,8 +143,12 @@ paths:
   /v2/corpora:
     post:
       summary: Create a corpus
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_administrator
+        - administrator
+        - owner
       description: "The Create Corpus API lets you create a corpus to store and manage\
         \ your documents. A corpus is a container for documents and their associated\
         \ metadata. When creating a corpus, you can specify various settings such\
@@ -427,9 +459,15 @@ paths:
       x-fern-sdk-method-name: create
     get:
       summary: List corpora
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'The List Corpora API lets you retrieve a list of corpora in your
         account. This endpoint returns a paginated list of corpora objects, which
         contain basic information about each corpus. The returned corpus objects contain
@@ -628,9 +666,21 @@ paths:
       tags:
       - Corpora
       summary: Retrieve metadata about a corpus
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - viewer
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'The Get Corpus API lets you view metadata about a specific corpus.
         This is useful for getting information about a corpus without performing a
         search. This operation does not search the corpus contents. Specify the `corpus_key`
@@ -842,8 +892,15 @@ paths:
       tags:
       - Corpora
       summary: Delete a corpus and all its data
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_administrator
+        - administrator
+        - owner
       description: "Permanently delete a corpus and all its associated data. The `corpus_key`\
         \ uniquely identifies the corpus. \n\nUpon successful completion, space quota\
         \ consumed by the corpus will be freed, and the corpus will no longer be useable\
@@ -880,8 +937,17 @@ paths:
       tags:
       - Corpora
       summary: Update a corpus
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_developer
+        - corpus_administrator
+        - administrator
+        - owner
       description: 'The Update Corpus API lets you enable, disable, or update the
         name and description of a corpus. This is useful to manage the availability
         of data within the system, such as when you need to take the corpus offline
@@ -934,8 +1000,16 @@ paths:
       tags:
       - Corpora
       summary: Remove all documents and data in a corpus
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_administrator
+        - administrator
+        - owner
       description: Resets a corpus, which removes all documents and data from the
         specified corpus, while keeping the corpus itself. The `corpus_key` uniquely
         identifies the corpus. For more information, see [Create a corpus](https://docs.vectara.com/docs/rest-api/create-corpus).
@@ -972,8 +1046,17 @@ paths:
       tags:
       - Corpora
       summary: Replace the filter attributes of a corpus
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_developer
+        - corpus_administrator
+        - administrator
+        - owner
       operationId: replaceFilterAttributes
       description: 'Replace the filter attributes of a corpus. This does not happen
         immediately, as this operation creates a job that completes asynchronously.
@@ -1099,8 +1182,13 @@ paths:
       tags:
       - Corpora
       summary: Compute the current size of a corpus
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_developer
+        - corpus_administrator
+        - administrator
+        - owner
       description: Compute the current size of a corpus, including number of documents,
         parts, and characters. The `corpus_key` uniquely identifies the corpus.
       operationId: computeCorpusSize
@@ -1139,9 +1227,21 @@ paths:
       tags:
       - Corpora
       summary: Get filter attribute statistics for corpus metadata
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - viewer
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'Retrieve statistics and value distributions for filter attributes
         in a corpus. This endpoint provides insights into the metadata structure and
         content distribution, enabling users to understand available filter values
@@ -1388,9 +1488,18 @@ paths:
       tags:
       - Upload
       summary: Upload a file to the corpus
-      x-supported-api-key-type:
-      - IndexService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_developer
+        - corpus_administrator
+        - administrator
+        - owner
       description: "Upload a file to a corpus for automatic text extraction, chunking,\
         \ and indexing. This endpoint is designed for unstructured documents where\
         \ you want Vectara to handle parsing for you. Each uploaded file can be up\
@@ -1529,9 +1638,18 @@ paths:
       tags:
       - Index
       summary: Add a document to a corpus
-      x-supported-api-key-type:
-      - IndexService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_developer
+        - corpus_administrator
+        - administrator
+        - owner
       description: "Add a document to a corpus for indexing, making its content available\
         \ for search, retrieval, and generation. This endpoint supports two ingestion\
         \ modes: **structured** documents and **core** documents. These modes offer\
@@ -1667,9 +1785,21 @@ paths:
       tags:
       - Documents
       summary: List the documents in the corpus
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - viewer
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: "The List Documents API enables you to retrieve a list of documents\
         \ stored in a specific corpus. This endpoint provides an overview of document\
         \ metadata, including document IDs, tables (if table extraction is enabled),\
@@ -1747,9 +1877,18 @@ paths:
       tags:
       - Documents
       summary: Bulk delete documents from a corpus
-      x-supported-api-key-type:
-      - IndexService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_developer
+        - corpus_administrator
+        - administrator
+        - owner
       description: 'Initiates an asynchronous bulk delete operation for documents
         in a corpus.
 
@@ -1871,9 +2010,18 @@ paths:
       tags:
       - Documents
       summary: Delete a document
-      x-supported-api-key-type:
-      - IndexService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_developer
+        - corpus_administrator
+        - administrator
+        - owner
       description: Permanently delete a document identified by its unique `document_id`
         from a specific corpus. This operation cannot be undone, so use it with caution.
       operationId: deleteCorpusDocument
@@ -1914,9 +2062,21 @@ paths:
       tags:
       - Documents
       summary: Retrieve a document
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - viewer
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'The Retrieve Document API enables you to fetch the content and
         metadata of a specific document from a corpus, identified by its unique `document_id`
         from a specific corpus. Use this endpoint to view the full details of a document,
@@ -1972,9 +2132,18 @@ paths:
       tags:
       - Index
       summary: Update document, merging the metadata.
-      x-supported-api-key-type:
-      - IndexService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_developer
+        - corpus_administrator
+        - administrator
+        - owner
       description: Updates document identified by its unique `document_id` from a
         specific corpus. The request body metadata is merged with the existing metadata,
         adding or modifying only the specified fields.
@@ -2032,9 +2201,18 @@ paths:
       tags:
       - Index
       summary: Replace the document metadata.
-      x-supported-api-key-type:
-      - IndexService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_developer
+        - corpus_administrator
+        - administrator
+        - owner
       description: Replaces metadata of a document identified by its unique `document_id`
         from a specific corpus.
       operationId: replaceCorpusDocumentMetadata
@@ -2091,9 +2269,21 @@ paths:
       tags:
       - Documents
       summary: Summarize a document
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - viewer
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: "Organizations often struggle with extracting relevant insights\
         \ from extensive documentation, such as vendor quotes, financial statements,\
         \ and technical reports. Manually reviewing these documents is both time-consuming\
@@ -2263,9 +2453,21 @@ paths:
       tags:
       - Documents
       summary: Retrieve an image from a document
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - viewer
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: Returns a specific image that is embedded within a document. The
         `image_id` uniquely identifies the image within the document. Use this endpoint
         to fetch the raw image data and associated metadata.
@@ -2329,9 +2531,21 @@ paths:
       tags:
       - Metadata Query
       summary: Query across metadata fields in a corpus
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - viewer
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: Query for documents in a specific corpus using fuzzy matching across
         specified metadata fields. The search first applies any exact metadata filters
         to narrow the results, then performs fuzzy matching on the remaining documents
@@ -2384,9 +2598,21 @@ paths:
       tags:
       - Queries
       summary: Simple Single Corpus Query
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - viewer
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'The [**Query APIs**](/docs/rest-api/queries) enable Retrieval
         Augmented Generation (RAG), allowing you to search your data and generate
         AI-powered summaries. Vectara provides three query types to match different
@@ -2586,9 +2812,21 @@ paths:
       tags:
       - Queries
       summary: Advanced Single Corpus Query
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - viewer
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: "Perform an advanced query on a specific corpus to find relevant\
         \ results, generate summaries, highlight relevant snippets, and use Retrieval\
         \ Augmented Generation.\n\nThis endpoint expands on the simple GET version\
@@ -3055,9 +3293,21 @@ paths:
       tags:
       - Queries
       summary: Multiple Corpora Query
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - viewer
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'Perform a multipurpose query to retrieve relevant information
         from one or more corpora and generate a response using Retrieval Augmented
         Generation (RAG). Similar to the [advanced corpora search](https://docs.vectara.com/docs/rest-api/query-corpus).
@@ -3496,9 +3746,21 @@ paths:
       tags:
       - Query History
       summary: Get a query history
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - viewer
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'The Get Query History API allows you to retrieve detailed history
         about a specific query that was made against a corpus. The response includes
         detailed information about the query, such as latency, the time it was executed,
@@ -3551,9 +3813,21 @@ paths:
       tags:
       - Query History
       summary: List the history of previous queries
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - viewer
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'The List Query Histories API allows you to retrieve, update, and
         manage query history for a specific corpus. This API is particularly useful
         for tracking query performance, debugging individual queries, and retrieving
@@ -3650,9 +3924,21 @@ paths:
       tags:
       - Chats
       summary: Start a chat
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - viewer
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: Create a chat while specifying the default retrieval parameters
         used by the prompt.
       operationId: createChat
@@ -4187,9 +4473,15 @@ paths:
       tags:
       - Chats
       summary: List chats
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: Retrieve a list of previous chats in the Vectara account.
       operationId: listChats
       parameters:
@@ -4242,9 +4534,15 @@ paths:
       tags:
       - Chats
       summary: Get a chat
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: Get a chat summary to view what started the chat, but not subsequent
         turns.
       operationId: getChat
@@ -4284,8 +4582,12 @@ paths:
       tags:
       - Chats
       summary: Delete a chat
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_administrator
+        - administrator
+        - owner
       description: Delete a chat and any turns it contains permanently.
       operationId: deleteChat
       parameters:
@@ -4321,9 +4623,21 @@ paths:
       tags:
       - Chats
       summary: Create a new turn in the chat
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: CorpusRole
+        roles:
+        - viewer
+        - editor
+        - administrator
+        - owner
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: Create a new turn in the chat. Each conversation has a series of
         `turn` objects, which are the sequence of message and response pairs that
         make up the dialog.
@@ -4523,9 +4837,15 @@ paths:
       tags:
       - Chats
       summary: List turns in a chat
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: List all turns in a chat to see all message and response pairs
         that make up the dialog.
       operationId: listChatTurns
@@ -4567,9 +4887,15 @@ paths:
       tags:
       - Chats
       summary: Get a turn
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: Get a specific turn from a chat, which is a message and response
         pair from the conversation.
       operationId: getChatTurn
@@ -4616,8 +4942,12 @@ paths:
       tags:
       - Chats
       summary: Delete a turn
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_administrator
+        - administrator
+        - owner
       description: Delete a turn from a chat. This will delete all subsequent turns
         in the chat.
       operationId: deleteChatTurn
@@ -4660,8 +4990,13 @@ paths:
       tags:
       - Chats
       summary: Update a turn
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_developer
+        - corpus_administrator
+        - administrator
+        - owner
       description: Update a turn; used to disable or enable a chat.
       operationId: updateChatTurn
       parameters:
@@ -4714,9 +5049,11 @@ paths:
       tags:
       - Large Language Models
       summary: Create an LLM
-      x-supported-api-key-type:
-      - IndexService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - administrator
+        - owner
       description: "Integrate external Large Language Models (LLMs) into Vectara for\
         \ Retrieval Augmented Generation (RAG) and chat. Connect OpenAI API-compatible\
         \ models from providers like Anthropic, Azure, Google, or custom-hosted endpoints.\
@@ -4800,9 +5137,15 @@ paths:
       tags:
       - Large Language Models
       summary: List LLMs
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: List LLMs that can be used with query and chat endpoints. The LLM
         is not directly specified in a query, but instead a `generation_preset_name`
         is used. The `generation_preset_name` property in generation parameters can
@@ -4859,9 +5202,11 @@ paths:
       tags:
       - Large Language Models
       summary: Get an LLM
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - administrator
+        - owner
       description: 'The Get LLM API allows users to retrieve details about a specific
         Large Language Model (LLM) that has been configured within the Vectara platform.
         This API provides metadata about the LLM, including its name, description,
@@ -4913,8 +5258,11 @@ paths:
       tags:
       - Large Language Models
       summary: Delete an LLM
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - administrator
+        - owner
       description: 'The Delete LLM API enables users to remove a previously configured
         custom Large Language Model (LLM) from their Vectara account. This functionality
         is essential for managing active LLM configurations and ensuring that only
@@ -4961,9 +5309,11 @@ paths:
       tags:
       - Large Language Models
       summary: Update an LLM
-      x-supported-api-key-type:
-      - IndexService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - administrator
+        - owner
       description: 'Update an existing LLM''s configuration. This endpoint allows
         partial updates - only provide fields you want to change. Only the name field
         is immutable.
@@ -5050,9 +5400,15 @@ paths:
       tags:
       - LLM Chat Completions
       summary: Creates a model response for the given chat conversation
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: "The Chat Completions API provides an OpenAI-compatible interface\
         \ for generating model responses in multi-turn chat conversations. This API\
         \ enables you to integrate our language models directly into applications\
@@ -5123,9 +5479,15 @@ paths:
       tags:
       - Generation Presets
       summary: List generation presets
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'Organizations often struggle to fine-tune query responses and
         maintain consistency across different use cases. Vectara creates and maintains
         predefined generation presets for our users which provides a flexible and
@@ -5219,9 +5581,15 @@ paths:
       tags:
       - Factual Consistency Evaluation
       summary: Evaluate factual consistency
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: "Evaluate the factual consistency of a generated text (like a summary)\
         \ against source documents. This determines how accurately the generated text\
         \ reflects the information in the source documents, helping identify potential\
@@ -5291,8 +5659,11 @@ paths:
       tags:
       - Encoders
       summary: Create an encoder
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - administrator
+        - owner
       description: Create a new encoder.
       operationId: createEncoder
       parameters:
@@ -5328,9 +5699,15 @@ paths:
       tags:
       - Encoders
       summary: List encoders
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'The List Encoders API retrieves a list of available encoders used
         for embedding documents and queries.
 
@@ -5387,9 +5764,15 @@ paths:
       tags:
       - Rerankers
       summary: List rerankers
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'The List Rerankers API retrieves a list of available rerankers
         used to improve the ranking and ordering of search results.
 
@@ -5449,8 +5832,15 @@ paths:
       tags:
       - Table Extractors
       summary: List supported table extractors
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: Table extractors are used to extract tabular data from documents
         during indexing.
       operationId: listTableExtractors
@@ -5477,9 +5867,15 @@ paths:
       tags:
       - Hallucination Correctors
       summary: List hallucination correctors
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'The List Hallucination Correctors API enables users to list available
         hallucination correctors used for detecting and correcting hallucinations
         in AI-generated content. Vectara provides these models as part of its broader
@@ -5548,9 +5944,15 @@ paths:
       tags:
       - Hallucination Correctors
       summary: Corrects hallucinations in generated text based on source documents
-      x-supported-api-key-type:
-      - QueryService
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'The Hallucination Correctors API enables users to automatically
         detect and correct factual inaccuracies, commonly referred to as hallucinations,
         in generated summaries or responses. By comparing a user-provided summary
@@ -5617,8 +6019,15 @@ paths:
       tags:
       - Jobs
       summary: List jobs
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: List jobs for the account. Jobs are background processes like replacing
         the filterable metadata attributes.
       operationId: listJobs
@@ -5689,8 +6098,15 @@ paths:
       tags:
       - Jobs
       summary: Get a job by ID
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: Get a job by a specific `job_id`. Jobs are background processes
         like replacing the filterable metadata attributes.
       operationId: getJob
@@ -5730,8 +6146,11 @@ paths:
       tags:
       - Users
       summary: Create a user in the current customer account
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - administrator
+        - owner
       description: 'Create a user for the current customer account. For example, a
         company wants to onboard new team members efficiently and this endpoint lets
         you streamline the process by adding new users programmatically, assigning
@@ -5787,8 +6206,11 @@ paths:
       tags:
       - Users
       summary: List users in the account
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - administrator
+        - owner
       description: 'The List Users API lets you list all users on your team and also
         their corpus access and customer-level authorizations.
 
@@ -5849,8 +6271,15 @@ paths:
       tags:
       - Users
       summary: Get a user
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: Get a user and view details like the email, username, and associated
         roles.
       operationId: getUser
@@ -5889,8 +6318,11 @@ paths:
       tags:
       - Users
       summary: Update a user
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - administrator
+        - owner
       description: Update details about a user such as role names.
       operationId: updateUser
       parameters:
@@ -5933,8 +6365,11 @@ paths:
       tags:
       - Users
       summary: Delete a user
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - administrator
+        - owner
       description: Delete a user from the account.
       operationId: deleteUser
       parameters:
@@ -5969,8 +6404,11 @@ paths:
       tags:
       - Users
       summary: Reset the password for a user
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - administrator
+        - owner
       description: Reset the password for a user.
       operationId: resetUserPassword
       parameters:
@@ -6018,8 +6456,15 @@ paths:
       tags:
       - API Keys
       summary: Create an API key
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'The Create API Key API lets you create new API keys, which you
         can bind to one or multiple corpora. You can also decide whether to designate
         each key for specific access like personal API keys, only querying (read-only)
@@ -6071,8 +6516,15 @@ paths:
       tags:
       - API Keys
       summary: List API keys
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'The List API Keys API lists all existing API keys for a customer
         ID. It also shows what corpora are accessed by these keys and with what permissions.
         This capability can provide insights into key usage and status and help you
@@ -6145,8 +6597,15 @@ paths:
       tags:
       - API Keys
       summary: Get an API key
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'The Get API Key API lists all existing API keys for a customer
         ID. It also shows what corpora are accessed by these keys and with what permissions.
 
@@ -6185,8 +6644,15 @@ paths:
       tags:
       - API Keys
       summary: Update an API key
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'The Update API Key API lets you enable or disable specific API
         keys. You can use this endpoint to temporarily disable access without deleting
         the key.
@@ -6230,8 +6696,15 @@ paths:
       tags:
       - API Keys
       summary: Delete an API key
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - corpus_viewer
+        - corpus_developer
+        - corpus_administrator
+        - viewer
+        - administrator
+        - owner
       description: "The Delete API Key API lets you delete one or more existing API\
         \ keys. \nThis capability is useful for managing the lifecycle and security\
         \ of \nAPI keys such as when they are no longer needed or when a key is compromised.\n"
@@ -6261,8 +6734,11 @@ paths:
       tags:
       - Application Clients
       summary: Create an App Client
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - administrator
+        - owner
       description: An App Client is used for OAuth 2.0 authentication when calling
         Vectara APIs.
       operationId: createAppClient
@@ -6300,8 +6776,11 @@ paths:
       tags:
       - Application Clients
       summary: List App Clients
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - administrator
+        - owner
       description: Retrieve a list of application clients configured for the customer
         account.
       operationId: listAppClient
@@ -6361,8 +6840,11 @@ paths:
       tags:
       - Application Clients
       summary: Get an App Client
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - administrator
+        - owner
       description: Retrieve details of a specific application client by its ID.
       operationId: getAppClient
       parameters:
@@ -6393,8 +6875,11 @@ paths:
       tags:
       - Application Clients
       summary: Update an App Client
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - administrator
+        - owner
       description: Update the configuration or settings of an existing application
         client.
       operationId: updateAppClient
@@ -6431,8 +6916,11 @@ paths:
       tags:
       - Application Clients
       summary: Delete an App Client
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - administrator
+        - owner
       description: Remove an application client configuration from the customer account.
       operationId: deleteAppClient
       parameters:
@@ -6458,6 +6946,7 @@ paths:
   /oauth/token:
     post:
       security: []
+      x-required-roles: []
       summary: Request an access token
       description: Obtain an OAuth2 access token using client credentials
       x-fern-sdk-group-name:
@@ -6510,8 +6999,17 @@ paths:
       tags:
       - Tool Servers
       summary: List tool servers
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: Retrieve a list of available tool servers that expose various tools.
       operationId: listToolServers
       parameters:
@@ -6581,8 +7079,15 @@ paths:
       tags:
       - Tool Servers
       summary: Create tool server
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_administrator
+        - administrator
+        - owner
       description: Create a new tool server to expose tools for use by agents.
       operationId: createToolServer
       parameters:
@@ -6620,8 +7125,17 @@ paths:
       tags:
       - Tool Servers
       summary: Get tool Server
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: Retrieve details about a specific tool server by its Id.
       operationId: getToolServer
       parameters:
@@ -6660,8 +7174,15 @@ paths:
       tags:
       - Tool Servers
       summary: Update tool server
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_administrator
+        - administrator
+        - owner
       description: Update the configuration of a specific tool server.
       operationId: updateToolServer
       parameters:
@@ -6712,8 +7233,15 @@ paths:
       tags:
       - Tool Servers
       summary: Delete tool server
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_administrator
+        - administrator
+        - owner
       description: Permanently delete a tool server and all its associated configuration
         and tools. This action cannot be undone.
       operationId: deleteToolServer
@@ -6750,8 +7278,15 @@ paths:
       tags:
       - Tool Servers
       summary: Synchronize tool server
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_administrator
+        - administrator
+        - owner
       description: Trigger a synchronization of the tool server to ensure it is up-to-date
         with the latest tools.
       operationId: syncToolServer
@@ -6788,8 +7323,17 @@ paths:
       tags:
       - Tools
       summary: Create tool
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: "Create a new tool that agents can use during conversation. Tools\
         \ give agents capabilities to interact with external systems, process data,\
         \ query corpora, or run custom logic. Agents select and invoke tools dynamically\
@@ -6846,8 +7390,20 @@ paths:
       tags:
       - Tools
       summary: List tools
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: List all tools available to the authenticated user, with optional
         filtering and pagination. Tools represent capabilities that agents can invoke
         during conversation, including built-in system tools and user-defined Lambda
@@ -6944,8 +7500,17 @@ paths:
       tags:
       - Tools
       summary: Test Lambda tool without creation
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: 'Test a Lambda tool without creating it first. This endpoint allows
         you to validate code, discover schemas, and test execution before committing
         to tool creation.
@@ -7002,8 +7567,20 @@ paths:
       tags:
       - Tools
       summary: Get tool
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: Retrieve the full details of a specific tool, including its description,
         input schema, metadata, and capabilities. Tools may represent structured search
         functions, document-processing workflows, or user-defined Lambda functions.
@@ -7046,8 +7623,17 @@ paths:
       tags:
       - Tools
       summary: Update tool
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: "Update an existing tool\u2019s configuration, including its metadata,\
         \ enabled status, or other properties. Updating a tool modifies how agents\
         \ can invoke it during conversation."
@@ -7100,8 +7686,17 @@ paths:
       tags:
       - Tools
       summary: Delete tool
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: Permanently delete a tool and its configuration. This action cannot
         be undone. Agents attempting to use a deleted tool will fail, so ensure that
         agent configurations are updated before removing a tool.
@@ -7139,8 +7734,17 @@ paths:
       tags:
       - Tools
       summary: Test Lambda tool
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: 'Execute a Lambda tool with test inputs to verify it works correctly.
 
         This endpoint allows users to test their functions before using them with
@@ -7206,8 +7810,17 @@ paths:
       tags:
       - Instructions
       summary: Create instruction
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: "Create a new instruction that defines how an agent should behave,\
         \ reason, and respond. Instructions act as system-level guidelines that shape\
         \ the agent's tone, style, constraints, and tool usage.\n\nInstructions support\
@@ -7275,8 +7888,20 @@ paths:
       tags:
       - Instructions
       summary: List instructions
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'List all instructions available to the authenticated user, with
         optional filtering and pagination. This endpoint returns high-level information
         about each instruction, including name, status, and version details.
@@ -7351,8 +7976,20 @@ paths:
       tags:
       - Instructions
       summary: Get instruction
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'Retrieve the full definition of a specific instruction, including
         its template, metadata, enabled status, and version. Instruction templates
         may contain Velocity expressions that reference tools and metadata. If no
@@ -7403,8 +8040,17 @@ paths:
       tags:
       - Instructions
       summary: Update instruction
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: 'Update an existing instruction''s template, metadata, and configuration.
         Updated templates may include Velocity variables such as `$tools` or metadata
         references. Each update creates a new version, allowing agents to continue
@@ -7482,8 +8128,17 @@ paths:
       tags:
       - Instructions
       summary: Delete instruction
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: 'Permanently delete an instruction and all its associated configuration.
 
 
@@ -7528,8 +8183,17 @@ paths:
       tags:
       - Instructions
       summary: Test instruction
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: Test an instruction template using supplied context and available
         tools. This endpoint evaluates Velocity expressions such as `$tools`, `${session.metadata.field}`,
         or `${agent.metadata.field}`, and returns the fully rendered template output.
@@ -7599,8 +8263,17 @@ paths:
       tags:
       - Instructions
       summary: Delete instruction version
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: Permanently delete the specified version of the instruction. This
         action cannot be undone.
       operationId: deleteInstructionVersion
@@ -7650,8 +8323,12 @@ paths:
       tags:
       - Agents
       summary: Create agent
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: ApiRole
+        roles:
+        - agent_administrator
+        - administrator
+        - owner
       description: "Create a new agent. An agent is compromised as 3 main things of\
         \ functionality:\n  1. The **instructions** an agent follows. Known as a system\
         \ in prompt in other platforms.\n  2. The **steps** an agent follows when\
@@ -7722,8 +8399,21 @@ paths:
       tags:
       - Agents
       summary: List agents
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_user
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: The List Agents API enables you to retrieve a paginated list of
         all agents available to the authenticated user. This is useful for managing
         and monitoring agent deployments across use cases and environments.
@@ -7787,8 +8477,20 @@ paths:
       tags:
       - Agents
       summary: Get agent
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'The Get Agent API enables you to retrieve the complete configuration
         and operational details of a specific AI agent, providing comprehensive visibility
         into agent capabilities, tool integrations, behavioral instructions, and metadata.
@@ -7836,8 +8538,17 @@ paths:
       tags:
       - Agents
       summary: Update agent
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: 'The Update Agent API enables you to modify an existing agent configuration,
         including tool assignments, behavioral instructions, model parameters, and
         operational metadata.
@@ -7898,8 +8609,15 @@ paths:
       tags:
       - Agents
       summary: Replace agent
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_administrator
+        - administrator
+        - owner
       description: The Replace Agent API enables you to completely replace an existing
         agent configuration, including its corpora, tools, and generation presets.
         This endpoint performs a full replacement of the agent definition, unlike
@@ -7952,8 +8670,15 @@ paths:
       tags:
       - Agents
       summary: Delete agent
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_administrator
+        - administrator
+        - owner
       description: 'The Delete Agent API enables you to permanently remove an AI agent
         and its configuration from the Vectara platform, supporting agent lifecycle
         management and resource cleanup in enterprise environments.
@@ -7998,8 +8723,19 @@ paths:
       tags:
       - Agent Sessions
       summary: Create agent session
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_user
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_user
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: "Create a new session for interacting with an agent. A session\
         \ is the conversation container that maintains state across all messages,\
         \ events, tool use, and agent responses.\n\nThis endpoint initializes the\
@@ -8064,8 +8800,20 @@ paths:
       tags:
       - Agent Sessions
       summary: List agent sessions
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: List all agent sessions for the specified agent. This endpoint
         returns high-level information about each session, with optional filtering
         and pagination. Use this operation to browse existing sessions or to locate
@@ -8135,8 +8883,20 @@ paths:
       tags:
       - Agent Sessions
       summary: Get agent session
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: Retrieve the full details of a specific agent session using its
         unique session key. The response includes the session's configuration, metadata,
         timestamps, and other stored properties. Use this endpoint to inspect the
@@ -8182,8 +8942,17 @@ paths:
       tags:
       - Agent Sessions
       summary: Update agent session
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: 'Update the configuration of an existing agent session. This endpoint
         enables you to modify fields such as the name, description, or metadata.
 
@@ -8246,8 +9015,17 @@ paths:
       tags:
       - Agent Sessions
       summary: Delete agent session
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: Permanently delete an agent session. This action cannot be undone.
       operationId: deleteAgentSession
       parameters:
@@ -8287,8 +9065,19 @@ paths:
       tags:
       - Agent Sessions
       summary: Interact with an agent
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_user
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_user
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: Create a new input to an agent to interact with it.
       operationId: createAgentInput
       parameters:
@@ -8476,8 +9265,20 @@ paths:
       tags:
       - Agent Sessions
       summary: List events in agent session
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: List all events in a specific agent session, with optional pagination.
       operationId: listAgentEvents
       parameters:
@@ -8550,8 +9351,20 @@ paths:
       tags:
       - Agent Sessions
       summary: Get event in agent session
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: Retrieve the details of a specific event within an agent session.
       operationId: getAgentEvent
       parameters:
@@ -8602,8 +9415,15 @@ paths:
       tags:
       - Agent Sessions
       summary: Delete event
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_administrator
+        - administrator
+        - owner
       description: Permanently delete an event from a session. Removes the event from
         both the metadata database and the encrypted event store.
       operationId: deleteAgentEvent
@@ -8642,8 +9462,17 @@ paths:
       tags:
       - Agent Sessions
       summary: Hide event
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: Manually hide an event in a session. Sets hide_reason to 'manual'.
       operationId: hideAgentEvent
       parameters:
@@ -8685,8 +9514,17 @@ paths:
       tags:
       - Agent Sessions
       summary: Unhide event
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: Unhide a hidden event in a session. Clears the hide_reason.
       operationId: unhideAgentEvent
       parameters:
@@ -8728,8 +9566,20 @@ paths:
       tags:
       - Agent Sessions
       summary: List session artifacts
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: List all artifacts stored in a specific agent session, with cursor-based
         pagination. Artifacts are files either uploaded by the user, or generated
         within a session. This endpoint shows you what files exist in a session, but
@@ -8817,8 +9667,20 @@ paths:
       tags:
       - Agent Sessions
       summary: Get session artifact
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: Retrieve a specific artifact by its unique `artifact_id`, including
         metadata and base64-encoded file content.
       operationId: getSessionArtifact
@@ -8871,8 +9733,17 @@ paths:
       tags:
       - Agent Schedules
       summary: Create agent schedule
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: "Create a new schedule for automatically executing an agent at\
         \ specified intervals. Each execution creates a new session with the configured\
         \ message and metadata.\n\nSchedules enable automated agent workflows such\
@@ -8940,8 +9811,20 @@ paths:
       tags:
       - Agent Schedules
       summary: List agent schedules
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: List all schedules for the specified agent. This endpoint returns
         high-level information about each schedule including execution status and
         next scheduled execution time.
@@ -9002,8 +9885,20 @@ paths:
       tags:
       - Agent Schedules
       summary: Get agent schedule
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: Retrieve the full details of a specific agent schedule using its
         unique schedule key. The response includes the schedule's configuration, execution
         history, and timestamps.
@@ -9048,8 +9943,17 @@ paths:
       tags:
       - Agent Schedules
       summary: Update agent schedule
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_developer
+        - agent_administrator
+        - administrator
+        - owner
       description: 'Update an existing agent schedule. All fields are optional - only
         provided fields will be updated (PATCH semantics).
 
@@ -9112,8 +10016,15 @@ paths:
       tags:
       - Agent Schedules
       summary: Delete agent schedule
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_administrator
+        - administrator
+        - owner
       description: 'Delete an agent schedule. This stops all future executions of
         the schedule.
 
@@ -9160,8 +10071,20 @@ paths:
       tags:
       - Agent Schedules
       summary: List agent schedule executions
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: List all execution attempts for a schedule, ordered by most recent
         first.
       operationId: listAgentScheduleExecutions
@@ -9208,8 +10131,20 @@ paths:
       tags:
       - Agent Identity
       summary: Get agent identity
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_viewer
+        - agent_developer
+        - agent_administrator
+        - viewer
+        - administrator
+        - owner
       description: 'Retrieve the identity associated with an agent. The identity is
         the service account the agent uses when executing tools.
 
@@ -9257,8 +10192,15 @@ paths:
       tags:
       - Agent Identity
       summary: Update agent identity
-      x-supported-api-key-type:
-      - Personal
+      x-required-roles:
+      - type: AgentRole
+        roles:
+        - agent_administrator
+      - type: ApiRole
+        roles:
+        - agent_administrator
+        - administrator
+        - owner
       description: 'Update the agent''s identity role management mode and/or roles.
 
 

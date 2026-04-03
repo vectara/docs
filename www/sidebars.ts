@@ -34,11 +34,35 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: "category",
+      label: "Agents",
+      collapsible: false,
+      items: [
+        "agents/agents-quickstart",
+        "agents/agent-concepts",
+        "agents/instructions",
+        {
+          type: "category",
+          label: "Tools",
+          items: [
+            "agents/agent-tools",
+            "agents/subagents",
+            "agents/custom-tools",
+            "agents/lambda-tools",
+            "agents/model-context-protocol",
+          ],
+        },
+        "agents/artifacts",
+        "agents/sessions",
+        "search-and-retrieval/bring-your-own-llm",
+      ],
+    },
+    {
+      type: "category",
       label: "Search and retrieval",
       collapsible: false,
       items: [
         "search-and-retrieval/search-quick-start",
-         "search-and-retrieval/hybrid-search",
+        "search-and-retrieval/hybrid-search",
         {
           type: "category",
           label: "Reranking",
@@ -58,31 +82,6 @@ const sidebars: SidebarsConfig = {
         "tutorials/intelligent-query-rewriting",
         "tutorials/add-custom-dimensions",
         "search-and-retrieval/build-search-ui",
-      ],
-    },
-    {
-      type: "category",
-      label: "Agents",
-      collapsible: false,
-      items: [
-        "agents/agents-quickstart",
-        "agents/agent-concepts",
-        "agents/instructions",
-        {
-          type: "category",
-          label: "Tools",
-          items: [
-            "agents/agent-tools",
-            "agents/subagents",
-            "agents/custom-tools",
-            "agents/lambda-tools",
-            "agents/model-context-protocol",
-            // "agents/structured-indexing-tool",
-          ],
-        },
-        "agents/artifacts",
-        "agents/sessions",
-        "search-and-retrieval/bring-your-own-llm",
       ],
     },
     {
@@ -107,7 +106,6 @@ const sidebars: SidebarsConfig = {
       },
       collapsible: false,
       items: [
-        "video-tutorials",
         "tutorials/build-a-chatbot",
         "tutorials/build-a-financial-research-agent",
         "tutorials/faq-and-qna-matching",
@@ -221,42 +219,6 @@ const sidebars: SidebarsConfig = {
             "deployments/guides/vectara-okta-oidc",
           ]
         }
-      ],
-    },
-    {
-      type: "category",
-      label: "Tutorials",
-      link: {
-        type: 'generated-index',
-        title: "Tutorials",
-        description: "Tutorials to help you build with Vectara",
-        slug: "/tutorials",
-      },
-      collapsible: false,
-      items: [
-        "video-tutorials",
-        "tutorials/build-a-financial-research-agent",
-        "tutorials/faq-and-qna-matching",
-      ],
-    },
-    {
-      type: "category",
-      label: "Integrations",
-      link: {
-        type: 'doc',
-        id: 'integrations/community-collaborations-and-partnerships',
-      },
-      collapsible: false,
-      items: [
-        "tutorials/use-openai-libraries-with-vectara",
-        "tutorials/use-external-applications-sdk",
-        "integrations/vectara-and-langchain",
-        "integrations/vectara-and-llamaindex",
-        "integrations/vectara-and-flowise",
-        "integrations/vectara-and-langflow",
-        "integrations/vectara-and-airbyte",
-        "integrations/vectara-and-confluent",
-        "integrations/vectara-and-speechmatics",
       ],
     },
       ],
@@ -1209,19 +1171,16 @@ const sidebars: SidebarsConfig = {
       ],
     },
   ],
-  releaseNotes: [
+  releaseInfo: [
     {
       type: "doc",
       id: "release-notes",
       label: "Release Notes",
     },
-  ],
-
-  changeLog: [
     {
       type: "doc",
       id: "changelog",
-      label: "Changelog"
+      label: "Documentation Changelog",
     },
   ]
 };

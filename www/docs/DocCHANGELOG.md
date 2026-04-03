@@ -16,9 +16,13 @@ import { TopicButton } from "@site/src/components/ui/TopicButton";
 
 ### 📚 API Reference Updates
 - Updated the API Reference spec with all features released January–April 2026
+- Replaced `x-supported-api-key-type` annotations with `x-required-roles` on all 133 endpoints, showing exactly which API roles, corpus roles, and agent roles grant access
+- Each endpoint page now shows role badges in the authorization section
 
 ### 📝 Documentation Changes
 - Reorganized API Reference sidebar into grouped sections (Agents, Data, Search and Retrieval, Access Control, Analytics, Platform, Quality and Evaluation)
+- Rewrote Role-Based Access Control documentation to cover all four role tiers: API roles (13 account-level roles), corpus roles (viewer/editor/administrator/owner), agent roles (agent_user/agent_viewer/agent_developer/agent_administrator), and platform roles
+- Added API conventions and authentication documentation to the API Reference introduction page
 
 ---
 

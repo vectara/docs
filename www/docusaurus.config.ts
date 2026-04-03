@@ -101,12 +101,16 @@ ${content}
   ],
 
   scripts: [
+    { src: "/env.js" },
     { src: "/analytics.js", async: true },
     { src: "/scripts/reodev.js", async: true },
     { src: "/js/cleanCardDescriptions.js", async: true },
   ],
 
-  clientModules: ["./static/routeUpdateModule.js"],
+  clientModules: [
+    "./src/clientModules/domainRewrite.ts",
+    "./static/routeUpdateModule.js",
+  ],
 
   themes: [
     "docusaurus-theme-openapi-docs",
