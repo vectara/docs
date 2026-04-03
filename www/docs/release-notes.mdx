@@ -20,6 +20,210 @@ and how these product and documentation changes can benefit your enterprise.
 
 ---
 
+## Agent Identity
+
+_April 1, 2026_
+
+Agents now have their own dedicated identity. Previously, an agent
+executed tools and accessed resources using the identity of whoever
+invoked it. Now each agent has its own service account with
+independently configurable permissions.
+
+**Why it matters:** When agents ran as the calling user, every user
+needed permissions for everything the agent might do, and there was
+no way to restrict what the agent itself could access. With dedicated
+agent identities, you grant the agent exactly the permissions it needs
+— regardless of who triggers it.
+
+---
+
+## Context Compaction for Agent Sessions
+
+_March 18, 2026_
+
+Long-running agent sessions can now automatically compact their context.
+When a session approaches LLM token limits, compaction summarizes older
+events while preserving key information. You can also fork a session
+without compaction to branch a conversation.
+
+**Why it matters:** Before compaction, long conversations would hit
+token limits and fail. Now agents can maintain coherent, extended
+conversations — useful for research sessions, ongoing customer support
+threads, or multi-day workflows that accumulate significant context.
+
+**More information:**
+* [Agent Sessions API](/docs/rest-api/agent-sessions)
+
+---
+
+## Tool Versioning and Metadata
+
+_March 10, 2026_
+
+Tools now support category, lineage, version, and tool group metadata.
+You can mark tools as experimental and track how tools evolve across
+versions.
+
+**Why it matters:** As your tool library grows, versioning prevents
+breaking changes from affecting running agents. You can deploy a new
+version of a tool, test it with experimental agents, and promote it
+when ready — without disrupting production workflows.
+
+**More information:**
+* [Tools API](/docs/rest-api/tools)
+
+---
+
+## Multi-Step Agent Workflows
+
+_February 20, 2026_
+
+Agents now support multi-step workflows. Define named steps, each with
+its own instructions, available tools, and reminders. Steps transition
+based on configurable conditions.
+
+**Why it matters:** Steps give you fine-grained control over an agent's
+behavior during a turn. Each step can have different instructions and
+capabilities, so you can precisely shape what the agent does at each
+phase of its work.
+
+**More information:**
+* [Agents API](/docs/rest-api/agents)
+
+---
+
+## Agent Schedules
+
+_February 12, 2026_
+
+Schedule agents to execute automatically at specified intervals. Each
+scheduled run creates a new session, and you can view the execution
+history to monitor results.
+
+**Why it matters:** Many agent use cases are recurring — daily report
+generation, periodic data quality checks, or scheduled content updates.
+Schedules eliminate the need for external cron jobs or orchestration
+tools.
+
+**More information:**
+* [Agent Schedules API](/docs/rest-api/agent-schedules)
+
+---
+
+## Agent Skills
+
+_February 8, 2026_
+
+Organize agent capabilities into named skills that can be invoked
+explicitly. Skills let you direct an agent to use a specific capability
+rather than relying on the LLM to choose.
+
+**Why it matters:** When agents have many tools, the LLM sometimes picks
+the wrong one. Skills give you deterministic control — invoke exactly the
+capability you need, especially useful for programmatic agent interactions
+where you know the intent upfront.
+
+**More information:**
+* [Agents API](/docs/rest-api/agents)
+
+---
+
+## Concurrent Agent Sessions
+
+_February 5, 2026_
+
+Multiple clients can now interact with and interrupt an ongoing agent
+session simultaneously. This enables collaborative workflows where
+users and systems share a live agent session.
+
+**Why it matters:** You can now steer agents mid-response — queue up
+follow-up messages while the agent is still working, interrupt it if
+it's heading in the wrong direction, or redirect its focus without
+waiting for it to finish. This makes agent interactions feel responsive
+and controllable, especially for long-running tool calls or multi-step
+workflows where you need to course-correct in real time.
+
+**More information:**
+* [Agent Sessions API](/docs/rest-api/agent-sessions)
+
+---
+
+## Structured Outputs for Agents and LLMs
+
+_January 22, 2026_
+
+Agents and LLMs can now return responses conforming to a JSON schema
+you define. Specify the expected output structure when creating an agent
+or making a chat completion request, and the response will be validated
+against your schema.
+
+**Why it matters:** Parsing free-text LLM output is fragile and error-prone.
+Structured outputs guarantee the response shape, making it straightforward
+to feed agent responses into downstream systems, databases, or APIs
+without custom parsing logic.
+
+**More information:**
+* [Agents API](/docs/rest-api/agents)
+
+---
+
+## Bulk Delete Documents
+
+_January 17, 2026_
+
+Delete multiple documents from a corpus in a single asynchronous API
+call. The operation runs as a background job and you can track its
+progress through the Jobs API.
+
+**Why it matters:** Cleaning up large datasets previously required
+deleting documents one at a time. Bulk delete makes corpus maintenance
+practical for large-scale deployments where you regularly need to
+remove outdated or incorrect content.
+
+**More information:**
+* [Bulk Delete Documents API](/docs/rest-api/bulk-delete-corpus-documents)
+
+---
+
+## Web Get Tool
+
+_January 10, 2026_
+
+Agents can now fetch arbitrary URLs using the new `web_get` tool.
+Given any URL, the tool makes an HTTP request and returns the response
+content for the agent to reason over. This works with web pages, REST
+APIs, webhooks, and any HTTP-accessible endpoint.
+
+**Why it matters:** `web_get` turns agents into general-purpose HTTP
+clients. Beyond reading web pages, agents can call external REST APIs,
+pull data from internal services, trigger webhooks, or fetch structured
+data from any HTTP endpoint. Combined with structured outputs and
+lambda tools, this makes it possible to integrate agents with virtually
+any web-accessible system without writing custom tool code.
+
+**More information:**
+* [Agents API](/docs/rest-api/agents)
+
+---
+
+## Fuzzy and Prefix Metadata Search
+
+_January 6, 2026_
+
+The metadata query API now supports fuzzy and prefix matching on
+field values. Find documents even with approximate or partial metadata
+matches.
+
+**Why it matters:** Exact-match metadata filters miss documents with
+typos, abbreviations, or variant spellings. Fuzzy and prefix search
+makes metadata filtering more forgiving and practical for real-world
+data where values aren't perfectly normalized.
+
+**More information:**
+* [Metadata Query API](/docs/rest-api/metadata-query)
+
+---
+
 ## Voice AI with Speechmatics Integration
 
 _December 4, 2025_
