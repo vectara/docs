@@ -4,156 +4,134 @@ title: Role-based access control
 sidebar_label: Role-based access control
 ---
 
-
 import CodePanel from '@site/src/theme/CodePanel';
 
-This guide helps you configure account, billing, and corpus permissions in 
-Vectara using Role-Based Access Control (RBAC). Assign precise account and 
-corpus-level access for users and Client Apps.
+Vectara uses Role-Based Access Control (RBAC) with four tiers of roles:
+**API roles** (account-wide), **corpus roles** (per-corpus),
+**agent roles** (per-agent), and **platform roles** (system-level). Each tier
+controls access to different resources. A user's effective permissions are the
+**union** of all their assigned roles.
 
-RBAC defines what actions an authenticated entity (a user or app client 
-verified by a JWT token) can perform through **permissions** (such as querying 
-a corpus or managing users). Vectara groups permissions into **roles**, assigned 
-through the Vectara Console. Admins can also set **default permissions** (such 
-as default Query access) to simplify access to corpora.
+## API roles (account-level)
 
-```mermaid
-flowchart TD
-    A(Admin logs into console) --> B(Manage account settings)
-    A --> C(Manage corpora)
-    
-    B --> B1(Invite team members)
-    B --> B2(Assign account-level roles)
-    B2 --> B3(Owner / Account admin / <br>Corpus admin / Billing admin)
+API roles control what a user or app client can do across the entire account.
 
-    C --> C1(Select a corpus, click Access control)
-    C1 --> C2(Grant user or app client access)
-    C2 --> C3(Assign corpus-level roles)
-    C3 --> C4(Query / Index / Admin roles)
+| Role | Description |
+|------|-------------|
+| `owner` | Full account control including deletion and ownership transfer. |
+| `administrator` | Manages users, app clients, LLMs, encoders, agents, corpora, tools, and instructions. Cannot delete the account or manage billing. |
+| `billing_administrator` | Views and edits billing activity only. |
+| `corpus_administrator` | Creates, deletes, and resets corpora. Has full read/write access to all corpus data. |
+| `corpus_developer` | Indexes, queries, and manages documents across all corpora. Cannot create or delete corpora. |
+| `corpus_viewer` | Read-only query and document listing across all corpora. |
+| `agent_administrator` | Full agent management: create, delete, replace agents, manage connectors, tool servers, and agent identity. |
+| `agent_developer` | Updates agents, manages sessions, tools, instructions, and schedules. Cannot create or delete agents. |
+| `agent_viewer` | Read-only access to agents, sessions, events, tools, instructions, and schedules. |
+| `agent_user` | Can create agent sessions and send input to agents. |
+| `pipeline_administrator` | Full pipeline management: create, update, delete, and trigger pipelines. |
+| `pipeline_viewer` | Read-only access to pipelines and pipeline runs. |
+| `viewer` | Read-only access across corpora, agents, and pipelines. Combines `corpus_viewer`, `agent_viewer`, and `pipeline_viewer`. |
 
-    style A fill:#f9f,stroke:#333,stroke-width:2px
-    style B fill:#bbf,stroke:#333
-    style C fill:#bbf,stroke:#333
-    style B1 fill:#ccf
-    style B2 fill:#ccf
-    style C1 fill:#ccf
-    style C2 fill:#ccf
-    style C3 fill:#ccf
-```
+### API role hierarchy
 
-## Configure account and billing permissions
+Higher roles inherit all permissions of lower roles in their domain:
 
-Admins manage account-wide settings (users, API keys) and billing tasks using 
-account-level roles, ideal for oversight without direct data access.
+- **Corpus domain:** `corpus_viewer` → `corpus_developer` → `corpus_administrator` → `administrator` → `owner`
+- **Agent domain:** `agent_user` / `agent_viewer` → `agent_developer` → `agent_administrator` → `administrator` → `owner`
+- **Pipeline domain:** `pipeline_viewer` → `pipeline_administrator` → `administrator` → `owner`
 
-### Account-level roles
-- **Owner**: Initial role granted to the account creator. Grants 
-  full permissions including account deletion.
-- **Account admin**: Manages all actions except billing (users, API keys, corpora).
-- **Corpus admin**: Manages corpora across the account.
-- **Billing admin**: Views and edits billing activity only. This role is 
-  specialized for financial tasks.
+## Corpus roles (per-corpus)
 
-### Assign account-level roles
+Corpus roles control what a user or app client can do within a specific
+corpus. They grant access to **one corpus only**, unlike API roles which
+apply account-wide.
 
-1. Go to **Team** in the Vectara Console.
-2. Click **Invite team member**.
-3. Add a user by email, entering a description, and selecting **Account Admin**,
-   **Corpus Admin**, or **Billing Admin**.  
-4. Click **Send invitation**.
-5. Go to **Authorization** to [manage API keys](/docs/security/authentication/api-key-management) or [OAuth 2.0 app clients](/docs/security/authentication/oauth).
+| Role | Description |
+|------|-------------|
+| `viewer` | Query, search, list documents, view metadata and query history. |
+| `editor` | Everything in `viewer`, plus upload files, index documents, and delete documents. |
+| `administrator` | Everything in `editor`, plus update corpus settings, reset the corpus, and replace filter attributes. |
+| `owner` | Everything in `administrator`, plus delete the corpus. |
 
-**Use Case:** An owner assigns an Account Admin role to a team member to oversee 
-corpora without billing access.
+### Corpus role hierarchy
+
+`viewer` → `editor` → `administrator` → `owner`
 
 :::note
-Account-level roles do not provide document-level access. Use corpus-level 
-roles for data interactions.
+A API role like `corpus_developer` grants access to **all** corpora,
+while a corpus role like `editor` grants access to **one specific** corpus.
 :::
 
-## Configure corpus permissions
+## Agent roles (per-agent)
 
-Admins and Developers control access to specific corpora for querying, 
-indexing, or administration, ensuring secure data interactions.
+Agent roles control what a user or app client can do with a specific agent.
 
-### Corpus-level roles
+| Role | Description |
+|------|-------------|
+| `agent_user` | Create sessions and send input (interact with the agent). |
+| `agent_viewer` | Read-only access: view agent config, sessions, events, schedules, tools, instructions, and artifacts. |
+| `agent_developer` | Everything in `agent_viewer` and `agent_user`, plus update the agent, manage sessions, create/update tools, instructions, and schedules. |
+| `agent_administrator` | Everything in `agent_developer`, plus delete the agent, manage connectors, tool servers, and agent identity. |
 
-* **Query (QRY)**: Permits read-only searches. This is ideal for developers or 
-  end users through Client Apps.
-* **Indexing (IDX)**: Enables adding data and querying, used by developers indexing 
-  content.
-* **Administrator (ADM)**: Grants control (query, index, reset, delete, manage 
-  permissions) for Admins managing a corpus.
+### Agent role hierarchy
 
-### Assign corpus-level roles
+`agent_user` / `agent_viewer` → `agent_developer` → `agent_administrator`
 
-1. Navigate to Corpora in the Vectara Console and select a corpus.
-2. Click the **gear icon** in the top-right corner to open the Settings page.
-3. Click the **Access control** tab.
-4. Click **Grant user access**.
-5. Select a user.
-6. Select **Query**, **Index, Query** and **index**, or **Admin**.
-7. Add a description for the user.
-8. Click **Grant access**.
+Note that `agent_user` and `agent_viewer` are independent — a viewer can
+inspect but not interact, while a user can interact but not inspect session
+history.
 
-**Use Case:** A developer assigns Query permissions to a client app for read-only 
-access to a customer support corpus.
+## Platform roles (system-level)
 
-:::note
-Each corpus requires separate role assignments. There is no automatic 
-cross-corpus access unless explicitly granted.
-:::
+Platform roles are for on-premises platform administration.
+
+| Role | Description |
+|------|-------------|
+| `platform_admin` | Full platform control across all customers. Implies `administrator` API role. |
+| `platform_viewer` | Read-only platform access. |
+
+## How roles interact
+
+A user's effective permissions come from the **union** of:
+1. Their **API roles** (account-wide)
+2. Their **corpus roles** (per-corpus grants)
+3. Their **agent roles** (per-agent grants)
+
+For example, a user with the `corpus_viewer` API role can query any
+corpus. If they also have an `editor` corpus role on a specific corpus, they
+can index documents into that corpus but not others.
+
+### Baseline access
+
+All authenticated users (regardless of role) can:
+- List corpora, rerankers, LLMs, encoders, generation presets, table extractors, and hallucination correctors
+- Manage their own API keys
+- View their own user profile
+- Use chat completions, factual consistency evaluation, and hallucination correction
 
 ## Best practices
 
-* ✅ Use the **principle of least privilege**: assign only needed roles.
-* ✅ Review role assignments when rotating keys or changing team structure
-* ✅ Separate roles for production versus development corpora
-* ❌ Do not give Admin roles to Client Apps unless essential
+- Assign only the roles a user needs (principle of least privilege).
+- Use **corpus roles** for per-corpus access control instead of broad API roles.
+- Use **agent roles** to give end users `agent_user` access without exposing agent configuration.
+- Review role assignments when rotating keys or changing team structure.
 
 ## Common issues and solutions
 
-| **Symptom**                    | **Cause**                            | **Solution**                                 |
-|--------------------------------|---------------------------------------|----------------------------------------------|
-| 403 Forbidden (API key)        | Missing corpus role assignment        | Assign QRY or IDX—Admins check               |
-| OAuth token returns empty data | App client lacks Query permission     | Assign QRY to app client—Developers note     |
-| Index fails with QRY role      | Wrong role assigned                   | Switch to IDX or Admin—Developers adjust     |
-
-In addition to role-based permissions, Vectara offers account-wide feature 
-controls.
-
-## Understand account features (beyond roles)
-
-Account features, unlike roles, apply account-wide and are tied to your account 
-tier, often configured by Admins:
-1. Custom dimensions
-2. Maximum corpora per query
-3. Score retrieval. Whether or not downstream systems have access to the raw
-   answer score. Advanced applications can utilize this information for
-   thresholding, and for incorporation into downstream machine-learning systems.
-4. Encoder swapping. Whether the indexing and querying encoders be swapped to
-   support semantic similarity matching in addition to question-answer matching.
-5. User rate limit. Whether per-user rate limits can be defined.
-6. Corpus rate limit. Whether per-corpus rate limits can be defined.
-7. Corpus encryption key. Whether every corpus uses a separate encryption key
-   for maximum security. Currently this feature is enabled for all accounts and
-   cannot be disabled.
-8. Customer managed encryption key. Whether the account may use a customer
-   managed master encryption key. This is an advanced feature that gives the
-   customer total control over their data. By revoking access to the master
-   key, the account will become inaccessible within minutes to the entire
-   platform.
-9. Document metadata. Specifies whether document level metadata may be stored
-   while indexing. This is currently enabled for all accounts.
-10. Document part metadata. Specifies whether part level metadata may be stored
-   while indexing. This is currently enabled for all accounts.
+| Symptom | Cause | Solution |
+|---------|-------|----------|
+| 403 Forbidden | Missing role for the operation | Check the endpoint's required roles in the API reference |
+| Can query but not index | User has `viewer` corpus role | Upgrade to `editor` corpus role |
+| Can't create agents | Missing `agent_administrator` API role | Assign the role to the user |
+| Agent interaction fails | Missing `agent_user` role on the agent | Grant `agent_user` agent role |
 
 ## Example role assignments
 
-| **Scenario**                      | **Assigned role** | **Scope**        |
-|-----------------------------------|-------------------|------------------|
-| Frontend search app (read-only)   | QRY               | Specific corpus  |
-| Backend service indexing data     | IDX               | Specific corpus  |
-| Admin user managing all corpora   | Owner             | Account-wide     |
-| OAuth client with query rights    | QRY               | One or more corpora |
-
+| Scenario | Role type | Role | Scope |
+|----------|-----------|------|-------|
+| Frontend search app (read-only) | Corpus | `viewer` | Specific corpus |
+| Backend service indexing data | Corpus | `editor` | Specific corpus |
+| Agent chatbot for end users | Agent | `agent_user` | Specific agent |
+| Developer building an agent | API | `agent_developer` | Account-wide |
+| Admin managing all corpora | API | `corpus_administrator` | Account-wide |
+| Platform operator | Platform | `platform_admin` | Platform-wide |

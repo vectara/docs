@@ -4,8 +4,8 @@ title: Private deployment options
 sidebar_label: Deployment options
 ---
 
-A private deployment of Vectara is designed to work with your existing 
-infrastructure choices, offering flexible deployment models to match your 
+A private deployment of Vectara is designed to work with your existing
+infrastructure choices, offering flexible deployment models to match your
 organization's specific requirements.
 
 ## Deployment models
@@ -17,6 +17,12 @@ Run Vectara in your data center. Air-gapped supported.
 - Physical servers or VMs
 - No internet required after initial setup
 - Your hardware, your rules
+
+### VMware by Broadcom
+
+Deployment supported for vSphere Kubernetes Service (VKS) within VMware Cloud Foundation (VCF) 9 and integration with VMware Private AI.
+
+[Learn more](https://www.vectara.com/developers/build/integrations/vmware)
 
 ### Private cloud (VPC)
 

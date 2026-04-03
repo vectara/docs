@@ -17,32 +17,37 @@ function base64ToUint8Array(base64: string): Uint8Array {
   return bytes;
 }
 
-// Create a context to share API data with child components
-export const ApiDataContext = React.createContext<string[] | null>(null);
+export interface RequiredRole {
+  type: string;
+  roles: string[];
+}
+
+export const ApiDataContext = React.createContext<RequiredRole[]>([]);
 
 export default function ApiItemWrapper(props: WrapperProps<ApiItemProps>) {
-  let apiKeyTypes: string[] | null = null;
-  
-  // Extract API data from frontMatter
+  let requiredRoles: RequiredRole[] = [];
+
   const { frontMatter } = props.content || {};
-  
+
   if (frontMatter?.api) {
     try {
       const api = JSON.parse(
         new TextDecoder().decode(ungzip(base64ToUint8Array(frontMatter.api)))
       );
-      
-      // Access the custom x-supported-api-key-type extension
-      apiKeyTypes = api['x-supported-api-key-type'] || null;
-      
+
+      const roles = api['x-required-roles'];
+      if (Array.isArray(roles)) {
+        requiredRoles = roles.filter(
+          (r: any) => r?.type && Array.isArray(r.roles)
+        );
+      }
     } catch (error) {
       console.error('Failed to parse API data:', error);
-      apiKeyTypes = null;
     }
   }
-  
+
   return (
-    <ApiDataContext.Provider value={apiKeyTypes}>
+    <ApiDataContext.Provider value={requiredRoles}>
       <ApiItem {...props} />
     </ApiDataContext.Provider>
   );
