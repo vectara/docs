@@ -1,4 +1,7 @@
 paths:
+  /v2/corpora/{corpus_key}/documents/{document_id}/images/{image_id}:
+    get:
+      x-fern-sdk-method-name: get_image
   /v2/agents/{agent_key}/sessions/{session_key}/events:
     post:
       x-fern-streaming:
@@ -9,3 +12,21 @@ components:
   schemas:
     AgentEvent:
       properties: null
+    CreateLambdaToolRequest:
+      properties:
+        code:
+          description: >
+            The Python 3.12 code for the function.
+
+            Must define a `process()` entry point function. Use type annotations on parameters
+            for automatic schema discovery.
+
+            Parameters are passed as keyword arguments matched to the function signature.
+            Can return any JSON-serializable type (strings, numbers, booleans, lists, or objects).
+
+            Use docstrings to provide descriptions for parameters (Google, NumPy, ReST, and
+            Epydoc styles are supported). These descriptions are automatically extracted and
+            included in the input schema.
+
+            Object parameters must use TypedDict. Bare dict and Dict[K, V] parameters are not
+            supported and will be rejected during validation.

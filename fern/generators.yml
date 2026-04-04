@@ -33,14 +33,11 @@ groups:
   python-sdk:
     generators:
       - name: fernapi/fern-python-sdk
-        version: 4.25.5
+        version: 4.63.5
         output:
           location: pypi
           package-name: "vectara"
           token: ${PYPI_TOKEN}
-        api:
-          settings:
-            unions: v1
         github:
           repository: vectara/python-sdk
         config:
@@ -63,9 +60,6 @@ groups:
           location: npm
           package-name: "vectara"
           token: ${NPM_TOKEN}
-        api:
-          settings:
-            unions: v1
         github:
           repository: vectara/typescript-sdk
         smart-casing: true
